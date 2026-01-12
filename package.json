@@ -1,0 +1,21 @@
+{
+  "name": "orchestrate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/basanta1-github/Orchestrate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/basanta1-github/Orchestrate/issues"
+  },
+  "homepage": "https://github.com/basanta1-github/Orchestrate#readme"
+}
