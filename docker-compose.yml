@@ -1,31 +1,76 @@
-version: '3.9'
 services:
-   api:
+  api:
     build: ./api
     ports:
       - "3000:3000"
-    env_file: .env_file
+    env_file: .env
     depends_on:
       - redis
       - db
+    restart: unless-stopped
 
-    redis:
-      image: redis:7-alpine
-      ports:
-        - "6379:6379"
+  email-worker:
+    build: ./workers
+    command: node dist/email-worker/worker.js
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
 
-    db:
-      image: postgres:15-alpine
-      environment: 
-        POSTGRES_USER: admin
-        POSTGRES_PASSWORD: admin
-        POSTGRES_DB: jobque
-      ports:
+  etl-worker:
+    build: ./workers
+    command: node dist/etl-worker/worker.js
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  media-worker:
+    build: ./workers
+    command: node dist/media-worker/worker.js
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  ml-worker:
+    build: ./workers
+    command: node dist/ml-worker/worker.js
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  report-worker:
+    build: ./workers
+    command: node dist/report-worker/worker.js
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment: 
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: jobque
+    ports:
         - '5432:5432'
+    restart: unless-stopped
 
-    workers:
-      build: ./workers
-      depends_on:
-        - redis
-        - db
+   
+
+
+
 
