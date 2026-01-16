@@ -1,8 +1,10 @@
 services:
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3001"
     env_file: .env
     depends_on:
       - redis
@@ -10,7 +12,9 @@ services:
     restart: unless-stopped
 
   email-worker:
-    build: ./workers
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
     command: node dist/email-worker/worker.js
     env_file:
       - .env
@@ -19,7 +23,9 @@ services:
     restart: unless-stopped
 
   etl-worker:
-    build: ./workers
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
     command: node dist/etl-worker/worker.js
     env_file:
       - .env
@@ -28,7 +34,9 @@ services:
     restart: unless-stopped
 
   media-worker:
-    build: ./workers
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
     command: node dist/media-worker/worker.js
     env_file:
       - .env
@@ -37,7 +45,9 @@ services:
     restart: unless-stopped
 
   ml-worker:
-    build: ./workers
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
     command: node dist/ml-worker/worker.js
     env_file:
       - .env
@@ -46,7 +56,9 @@ services:
     restart: unless-stopped
 
   report-worker:
-    build: ./workers
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
     command: node dist/report-worker/worker.js
     env_file:
       - .env
@@ -61,18 +73,14 @@ services:
 
   db:
     image: postgres:15-alpine
-    environment: 
+    environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: job_que
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-        - '5432:5432'
+      - "5432:5432"
     restart: unless-stopped
-
-   
-
-
-
-
+volumes:
+  db_data:

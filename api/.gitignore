@@ -3,6 +3,9 @@
 /node_modules
 /build
 
+# for now auth
+auth
+
 # Logs
 logs
 *.log

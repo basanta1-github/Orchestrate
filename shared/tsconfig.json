@@ -1,12 +1,18 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",  // source root is src
+    "rootDir": "src",  // source root is src
     "module": "commonjs",
     "target": "ES2020",
     "esModuleInterop": true,
-    "strict": true
+    "strict": true,
+    "noEmitOnError": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "experimentalDecorators": true,  // NestJS decorators
+    "emitDecoratorMetadata": true    // NestJS metadata
   },
-  "include": ["src/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

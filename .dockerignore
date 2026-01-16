@@ -4,3 +4,5 @@ dist
 .env
 Dockerfile
 README.md
+*.log
+.git

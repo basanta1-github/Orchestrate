@@ -4,16 +4,26 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Copy shared library from root context
+COPY shared ./shared
+
+
+# Build shared library inside container
+WORKDIR /app/shared
+RUN npm install
+RUN npx tsc
+
+#copy the worker package file
+WORKDIR /app 
+COPY workers/package*.json ./workers/
+
 # Install deps
-COPY package*.json ./
-RUN npm ci
-
-# Copy TS config
-COPY tsconfig.json ./
+WORKDIR /app/workers
+RUN npm install
 
 
-# Copy all worker source code
-COPY . ./
+# Copy all worker source code (includes tsconfig.json)
+COPY  workers/. ./
 
 # Build workers
 # RUN npm run build

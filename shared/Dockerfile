@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source
 COPY tsconfig.json ./
@@ -17,3 +17,4 @@ RUN npx tsc
 
 # This image is NOT meant to run this is only a library bor workers and api so no need
 # It only exists to be reused by api & workers
+# CMD ["tail", "-f", "/dev/null"]
