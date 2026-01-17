@@ -4,6 +4,7 @@ import {Repository} from 'typeorm'
 import { Job } from "../database/entities/job.entity";
 import { QueueService } from '@jobque/shared'
 import { CreateJobDto } from "./dto/create-job.dto";
+import { JobStatus } from "./jobs.constants";
 
 @Injectable()
 export class JobsService{
@@ -20,8 +21,9 @@ export class JobsService{
             metadata: dto.payload,
             priority: dto.priority ?? 5,
             retries: 3,
-           tenant:{id: tenantId},// TypeORM accepts object with only id for ManyToOne
-           user: {id:userId}
+            status: JobStatus.QUEUED,
+            tenant:{id: tenantId},// TypeORM accepts object with only id for ManyToOne
+            user: {id:userId}
         })
 
         const savedJob = await this.jobRepo.save(job)

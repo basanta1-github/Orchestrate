@@ -5,6 +5,7 @@ import {Tenant} from './tenant.entity'
 import {JobAttempt} from './job-attempt.entity'
 import {JobLog} from './job-log.entity'
 import { Worker } from './worker.entity';
+import { JobStatus } from '../../jobs/jobs.constants';
 
 @Entity('jobs')
 export class Job {
@@ -14,7 +15,7 @@ export class Job {
     @Column()
     type: string;
 
-    @Column({default: 'pending'})
+    @Column({type: 'enum', enum: JobStatus, default: JobStatus.QUEUED})
     status: string;
 
     @Column({default: 0})

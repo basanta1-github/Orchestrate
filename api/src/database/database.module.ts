@@ -18,7 +18,7 @@ import { Worker } from './entities/worker.entity';
       password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'job_que',
       entities: [Job, JobAttempt, JobLog, User, Tenant, Worker],
-      synchronize: false, // never true in production; use migrations
+      synchronize: true,
       logging: true,
     }),
     TypeOrmModule.forFeature([Job, JobAttempt, JobLog, User, Tenant, Worker]),
