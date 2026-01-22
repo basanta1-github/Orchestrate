@@ -5,9 +5,12 @@
     "module": "commonjs",
     "target": "ES2020",
     "esModuleInterop": true,
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@jobque/shared": ["../shared/dist"]
+    }
   },
-  "include": ["./**/*.ts"],
+  "include": [ "./**/*.ts"],
   "exclude": [
     "node_modules",
     "dist"

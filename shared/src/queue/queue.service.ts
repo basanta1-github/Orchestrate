@@ -1,13 +1,13 @@
+import { Queue } from "bullmq";
+import { JobQueuePayload } from "./job-queue.payload";
+import { Injectable } from "@nestjs/common";
 
-import { Queue } from 'bullmq';
-import { JobQueuePayload } from './job-queue.payload';
-
-
+@Injectable()
 export class QueueService {
   private queue: Queue;
 
   constructor() {
-    this.queue = new Queue('jobs', {
+    this.queue = new Queue("jobs", {
       connection: {
         host: process.env.REDIS_HOST,
         port: Number(process.env.REDIS_PORT),
@@ -16,19 +16,15 @@ export class QueueService {
   }
 
   async enqueue(payload: JobQueuePayload) {
-    await this.queue.add(
-      payload.jobType,
-      payload,
-      {
-        priority: payload.priority,
-        attempts: payload.retries,
-        backoff: {
-          type: 'exponential',
-          delay: 2000,
-        },
-        removeOnComplete: false,
-        removeOnFail: false,
-      }
-    );
+    await this.queue.add(payload.jobType, payload, {
+      priority: payload.priority,
+      attempts: payload.retries,
+      backoff: {
+        type: "exponential",
+        delay: 2000,
+      },
+      removeOnComplete: false,
+      removeOnFail: false,
+    });
   }
 }

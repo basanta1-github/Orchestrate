@@ -38,6 +38,7 @@ services:
       context: .
       dockerfile: workers/Dockerfile
     command: node dist/media-worker/worker.js
+    working_dir: /app/workers
     env_file:
       - .env
     depends_on:
