@@ -41,6 +41,9 @@ export class Job {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Column({ type: "timestamp", nullable: true })
+  completedAt?: Date;
+
   // Relations
   @ManyToOne(() => Tenant, (tenant) => tenant.jobs)
   tenant: Tenant;

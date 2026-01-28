@@ -8,7 +8,7 @@ export * from "./entities/user.entity";
 export * from "./entities/worker.entity";
 
 // repositories
-// export * from './repositories/'
+export * from "./repositories/job.repository";
 
-export * from "./data-source";
-export * from "./database.module";
+// export * from "./data-source"
+// export * from "./database.module";

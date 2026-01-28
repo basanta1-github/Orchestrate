@@ -14,6 +14,7 @@ COPY src ./src
 
 # Build shared library
 RUN npx tsc
+# RUN npx nest build
 
 # This image is NOT meant to run this is only a library bor workers and api so no need
 # It only exists to be reused by api & workers
