@@ -12,7 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@jobque/shared": "file:../shared",
+    "@jobque/shared": "file:../shared/jobque-shared-1.0.0.tgz",
     "@nestjs/common": "^11.1.12",
     "bullmq": "^5.66.5",
     "class-transformer": "^0.5.1",

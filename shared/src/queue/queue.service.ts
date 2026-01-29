@@ -7,10 +7,17 @@ export class QueueService {
   private queue: Queue;
 
   constructor() {
+    // 🔍 DEBUG — THIS IS THE RIGHT PLACE
+    console.log("RAW REDIS_PORT =", JSON.stringify(process.env.REDIS_PORT));
+    console.log(
+      "PARSED REDIS_PORT =",
+      parseInt(process.env.REDIS_PORT ?? "6379", 10),
+    );
+
     this.queue = new Queue("jobs", {
       connection: {
-        host: process.env.REDIS_HOST,
-        port: Number(process.env.REDIS_PORT),
+        host: process.env.REDIS_HOST || "redis",
+        port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
       },
     });
   }

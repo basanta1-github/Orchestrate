@@ -23,8 +23,9 @@
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts"
   },
   "dependencies": {
-    "@jobque/shared": "file:../shared",
+    "@jobque/shared": "file:../shared/jobque-shared-1.0.0.tgz",
     "@nestjs/common": "^11.1.12",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.12",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",

@@ -6,12 +6,11 @@
     "isolatedModules": true,
     "declaration": true,
     "removeComments": true,
-    "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2020",
     "sourceMap": true,
-    "outDir": "./dist",
+    "outDir": "./dist", 
     "rootDir": "./src",
     "paths": {
       "@jobque/shared": ["../shared/dist"]

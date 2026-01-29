@@ -1,20 +1,17 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-// import { InjectRepository } from "@nestjs/typeorm";
-import { JobRepository } from "../database/repositories/job.repository";
-// import { Repository, DataSource } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { Job } from "../database/entities/job.entity";
 import { QueueService } from "../queue/queue.service";
 import { CreateJobDto } from "./dto/create-job.dto";
 import { JobStatus } from "./jobs.constants";
-// import { JobAttempt } from "../database/entities/job-attempt.entity";
 
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
   constructor(
-    private readonly jobRepo: JobRepository,
-    // @InjectRepository(JobAttempt)
-    // private readonly attemptRepo: Repository<JobAttempt>,
+    @InjectRepository(Job)
+    private readonly jobRepo: Repository<Job>,
     private readonly queueService: QueueService,
   ) {}
 
