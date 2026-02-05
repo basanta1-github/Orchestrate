@@ -20,7 +20,7 @@ services:
       - .env
     depends_on:
       - redis
-    restart: unless-stopped
+    # restart: unless-stopped
 
   etl-worker:
     build:
@@ -31,7 +31,7 @@ services:
       - .env
     depends_on:
       - redis
-    restart: unless-stopped
+    # restart: unless-stopped
 
   media-worker:
     build:
@@ -54,7 +54,7 @@ services:
       - .env
     depends_on:
       - redis
-    restart: unless-stopped
+    # restart: unless-stopped
 
   report-worker:
     build:
@@ -65,7 +65,7 @@ services:
       - .env
     depends_on:
       - redis
-    restart: unless-stopped
+    # restart: unless-stopped
   redis:
     image: redis:7-alpine
     ports:

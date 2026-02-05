@@ -22,8 +22,8 @@ export class JobsService {
       priority: dto.priority ?? 5,
       retries: 3,
       status: JobStatus.QUEUED,
-      // tenant: { id: tenantId }, // TypeORM accepts object with only id for ManyToOne
-      // user: { id: userId },
+      tenant: { id: tenantId }, // TypeORM accepts object with only id for ManyToOne
+      user: { id: userId },
     });
 
     const savedJob = await this.jobRepo.save(job);

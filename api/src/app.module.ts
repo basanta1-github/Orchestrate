@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { JobsModule, DatabaseModule, QueueService } from '@jobque/shared';
+import { JobsModule, DatabaseModule } from '@jobque/shared';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
@@ -9,7 +9,7 @@ import { join } from 'path';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // 👈 critical
+      isGlobal: true,
       envFilePath: join(process.cwd(), '../.env'),
     }),
     TypeOrmModule.forRoot({
@@ -26,8 +26,17 @@ import { join } from 'path';
     DatabaseModule,
     JobsModule,
   ],
-  controllers: [AppController],
   providers: [AppService],
-  // exports: [TypeOrmModule],
+  controllers: [AppController],
 })
-export class AppModule {}
+export class AppModule implements OnApplicationBootstrap {
+  constructor(@Inject(AppService) private readonly appService: AppService) {}
+
+  onApplicationBootstrap() {
+    if (this.appService) {
+      console.log('✅ AppService exists in AppModule:', this.appService);
+    } else {
+      console.error('❌ AppService is undefined in AppModule!');
+    }
+  }
+}

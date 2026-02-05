@@ -1,0 +1,6 @@
+{
+  "watch": ["src", "package.json", "Dockerfile", "nodemon.json", "tsconfig.json"],
+  "ext": "ts,json",
+  "ignore": ["dist", "node_modules"],
+  "exec": "nest start"
+}

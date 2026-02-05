@@ -20,7 +20,6 @@ export class JobsController {
   // create job
   @Post()
   async createJob(@Body() dto: CreateJobDto) {
-    // try {
     // async createJob(@Body() dto: CreateJobDto, @Req() req){
     //     const userId = req.user.id;
     //     const tenantId = req.user.tenantId;
@@ -31,35 +30,21 @@ export class JobsController {
     const { id: userId, tenantId } = DEMO_USER;
     const job = await this.jobsService.createAndEnqueue(dto, userId, tenantId);
     return job;
-    // } catch (error) {
-    //   console.error("Error in /jobs POST:", error);
-    //   throw error;
-    // }
   }
 
   // fetch single job by ID
   @Get(":id")
   async getJob(@Param("id") id: string) {
-    // try {
     const { id: userId, tenantId } = DEMO_USER;
     const job = await this.jobsService.getJobById(id, userId, tenantId);
     return job;
-    // } catch (error) {
-    //   console.error("Error in get by an id", error);
-    //   throw error;
-    // }
   }
 
   // list all jobs with optional filters
   @Get()
   async listJobs(@Query() query: any) {
-    // try {
     const { id: userId, tenantId } = DEMO_USER;
     const job = await this.jobsService.listJobs(userId, tenantId, query);
     return job;
-    // } catch (error) {
-    //   console.error("error in list all job with optional filters", error);
-    //   throw error;
-    // }
   }
 }

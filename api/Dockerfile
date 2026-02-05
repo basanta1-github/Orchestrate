@@ -4,7 +4,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy shared library into container (so npm can install it)
-COPY shared/package*.json ./shared/
+COPY shared/jobque-shared-1.0.0.tgz ./shared/
 #copy only dependency files first (better caching)
 COPY api/package*.json ./api/
 

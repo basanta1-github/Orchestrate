@@ -4,7 +4,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy shared library from root context and the worker package files
-COPY shared/package*.json ./shared/
+COPY shared/jobque-shared-1.0.0.tgz ./shared/
 COPY workers/package*.json ./workers/
 
 # Install deps

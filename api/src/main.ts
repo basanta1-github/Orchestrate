@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { AllExceptionsFilter } from './errordebugger';
 import 'reflect-metadata';
 async function bootstrap() {
   try {
@@ -16,6 +17,8 @@ async function bootstrap() {
         transform: true, // convert payload into DTO class
       }),
     );
+    app.useGlobalFilters(new AllExceptionsFilter());
+
     const port = process.env.API_PORT || 3001;
     await app.listen(port);
     console.log(`🚀 API running on http://localhost:${port}`);
