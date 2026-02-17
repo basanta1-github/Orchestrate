@@ -40,6 +40,7 @@ export class JobsService {
         retries: savedJob.retries,
         metadata: savedJob.metadata,
       });
+      console.log(`Enqueued job ${savedJob.id} successfully.`);
     } catch (error) {
       this.logger.error(
         `Failed to enqueue job ${savedJob.id}`,
@@ -53,10 +54,17 @@ export class JobsService {
 
   //fetching single job
   async getJobById(jobId: string, userId: string, tenantId: string) {
-    const job = await this.jobRepo.findOne({
-      where: { id: jobId, user: { id: userId }, tenant: { id: tenantId } },
-      relations: ["attempts", "user", "tenant"],
-    });
+    const job = await this.jobRepo
+      .createQueryBuilder("job")
+      .leftJoinAndSelect("job.attempts", "attempts")
+      .leftJoinAndSelect("job.user", "user")
+      .leftJoinAndSelect("job.tenant", "tenant")
+      .where("job.id = :jobId", { jobId })
+      .andWhere("user.id = :userId", { userId })
+      .andWhere("tenant.id = :tenantId", { tenantId })
+      .orderBy("attempts.attemptNumber", "ASC") // important: order attempts
+      .getOne();
+
     if (!job) {
       throw new NotFoundException("Job not found");
     }
@@ -142,10 +150,26 @@ export class JobsService {
       },
       metadata: job.metadata,
       attempts: job.attempts?.map((a) => ({
+        id: a.id,
         attemptNumber: a.attemptNumber,
         status: a.status,
+
+        // execution timing
+        startedAt: a.startedAt,
+        finishedAt: a.finishedAt,
+
+        // debugging / observability
+        errorMessage: a.errorMessage,
+        result: a.result,
+
         createdAt: a.createdAt,
         updatedAt: a.updatedAt,
+      })),
+      logs: job.logs?.map((l) => ({
+        id: l.id,
+        message: l.message,
+        data: l.data,
+        createdAt: l.createdAt,
       })),
       timestamps: {
         createdAt: job.createdAt,

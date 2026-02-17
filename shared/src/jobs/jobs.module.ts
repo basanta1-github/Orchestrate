@@ -12,6 +12,5 @@ import { JobLog } from "../database/entities/job-log.entity";
   imports: [DatabaseModule, QueueModule],
   controllers: [JobsController],
   providers: [JobsService],
-  // exports: [JobsService],
 })
 export class JobsModule {}

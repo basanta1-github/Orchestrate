@@ -25,17 +25,17 @@ export class JobAttempt {
   @CreateDateColumn()
   createdAt: Date;
 
-  // @Column({ type: 'timestamp', nullable: true })
-  // startedAt?: Date;
+  @Column({ type: "timestamp", nullable: true })
+  startedAt?: Date;
+
+  @Column({ type: "timestamp", nullable: true })
+  finishedAt?: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
 
   @Column({ type: "text", nullable: true })
   errorMessage?: string;
-
-  @Column({ type: "timestamp", nullable: true })
-  completedAt?: Date;
 
   //Relations
   @ManyToOne(() => Job, (job) => job.attempts)

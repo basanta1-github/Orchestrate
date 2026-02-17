@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 export class AppController {
   constructor(@Inject(AppService) private readonly appService: AppService) {}
   onModuleInit() {
-    console.log('AppService in AppController:', this.appService);
+    // console.log('AppService in AppController:', this.appService);
   }
 
   @Get()

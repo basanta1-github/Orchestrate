@@ -2,9 +2,12 @@ import { Module, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JobsModule, DatabaseModule } from '@jobque/shared';
+import { WorkerModule } from '@jobque/workers';
+// import { MediaWorker } from '@jobque/workers/media-worker/worker';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
@@ -25,13 +28,17 @@ import { join } from 'path';
     }),
     DatabaseModule,
     JobsModule,
+    WorkerModule,
   ],
   providers: [AppService],
   controllers: [AppController],
 })
+// export class AppModule {}
 export class AppModule implements OnApplicationBootstrap {
-  constructor(@Inject(AppService) private readonly appService: AppService) {}
-
+  constructor(
+    @Inject(AppService) private readonly appService: AppService,
+    private readonly dataSource: DataSource,
+  ) {}
   onApplicationBootstrap() {
     if (this.appService) {
       console.log('✅ AppService exists in AppModule:', this.appService);
@@ -39,4 +46,9 @@ export class AppModule implements OnApplicationBootstrap {
       console.error('❌ AppService is undefined in AppModule!');
     }
   }
+  // constructor(private readonly mediaWorker: MediaWorker) {}
+  // onApplicationBootstrap() {
+  //   // Workers will start automatically on module init
+  //   console.log('🔥 All workers are initialized');
+  // }
 }

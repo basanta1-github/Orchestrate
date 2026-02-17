@@ -1,19 +1,28 @@
 {
-  "name": "workers",
+  "name": "@jobque/workers",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "nest build",
+    "pack": "npm run rebuild:shared && npm run clean && npm run build && npm pack",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf --glob dist \"*.tgz\"",
+    "rebuild:shared": "rimraf node_modules/@jobque/shared && npm install ../shared/jobque-shared-1.0.0.tgz",
+    "watch": "chokidar \"src/**/*\" \"../shared/dist/**/*\" -c \"npm run pack\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "dependencies": {
+  "peerDependencies": {
     "@jobque/shared": "file:../shared/jobque-shared-1.0.0.tgz",
     "@nestjs/common": "^11.1.12",
+    "@nestjs/core": "^11.1.12",
     "bullmq": "^5.66.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
@@ -24,14 +33,18 @@
     "pdfkit": "^0.17.2",
     "pg": "^8.17.2",
     "psql": "^0.0.1",
+    "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.28",
-    "winston": "^3.19.0",
-    "@nestjs/core": "^11.1.12",
-    "reflect-metadata": "^0.2.2"
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.8",
+    "chokidar-cli": "^3.0.0",
+    "rimraf": "^6.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "chokidar": "^5.0.0"
   }
 }

@@ -19,7 +19,7 @@ export class JobLog {
   data: Record<string, any>;
 
   @CreateDateColumn()
-  createdAT: Date;
+  createdAt: Date;
 
   //Relations
   @ManyToOne(() => Job, (job) => job.logs)
