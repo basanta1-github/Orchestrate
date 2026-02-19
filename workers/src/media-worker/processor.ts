@@ -8,6 +8,7 @@ import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 import { uploadFileLocal, uploadFileS3 } from "./storageService";
 
 @Injectable()
@@ -45,6 +46,8 @@ export class MediaProcessor extends BaseProcessor {
           job.data.metadata.fileUrl,
           job.data.metadata.width,
           job.data.metadata.height,
+          job.data.metadata.format,
+          job.data.metadata.filters || [],
         );
         break;
       default:
@@ -123,21 +126,78 @@ export class MediaProcessor extends BaseProcessor {
     fileUrl: string,
     width: number,
     height: number,
+    format: "jpeg" | "png" | "jpg" | "webp",
+    filters: string[] = [],
   ): Promise<string> {
     // setup sharp and paths
     const { default: sharp } = await import("sharp"); // dynamic import to reduce startup time and optional dependency
-    const outputFileName = `${uuidv4()}.jpg`;
+    const outputFileName = `${uuidv4()}.${format}`;
     const outputPath = path.join(
       process.cwd(),
       "processed_media",
       outputFileName,
     );
     await fs.ensureDir(path.dirname(outputPath));
+
+    let imageBuffer: Buffer;
+    if (fileUrl.startsWith("http") || fileUrl.startsWith("https")) {
+      const response = await axios.get(fileUrl, {
+        responseType: "arraybuffer",
+        timeout: 10000,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+          Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+          Referer: fileUrl,
+        },
+      });
+      imageBuffer = Buffer.from(response.data);
+    } else {
+      imageBuffer = await fs.readFile(fileUrl);
+    }
     //fetch and process
-    await sharp(fileUrl)
-      .resize(width, height, { fit: "cover", withoutEnlargement: true })
-      .toFormat("jpeg")
-      .toFile(outputPath);
+    let processor = sharp(imageBuffer).resize(width, height, {
+      fit: "cover",
+      withoutEnlargement: true,
+    });
+
+    // normalizing the filters for the for each loop
+    let safeFilters: string[] = [];
+    if (Array.isArray(filters)) {
+      safeFilters = filters;
+    } else if (typeof filters === "string") {
+      try {
+        const parsed = JSON.parse(filters);
+        safeFilters = Array.isArray(parsed) ? parsed : [filters];
+      } catch {
+        safeFilters = [filters];
+      }
+    }
+    // apply filters dynamically
+    safeFilters.forEach((filter) => {
+      switch (filter.toLowerCase()) {
+        case "grayscale":
+          processor = processor.grayscale();
+          break;
+        case "rotate":
+          processor = processor.rotate(90);
+          break;
+        case "flip":
+          processor = processor.flip();
+          break;
+        case "flop":
+          processor = processor.flop();
+          break;
+        case "blur":
+          processor = processor.blur();
+          break;
+        default:
+          console.warn(`Unknown folter: ${filter}`);
+      }
+    });
+    processor = processor.toFormat(format);
+
+    await processor.toFile(outputPath);
 
     return outputFileName;
   }
