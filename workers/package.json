@@ -38,13 +38,21 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/fluent-ffmpeg": "^2.1.28",
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.8",
     "chokidar-cli": "^3.0.0",
+    "express": "^5.2.1",
     "rimraf": "^6.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "chokidar": "^5.0.0"
+    "@aws-sdk/client-s3": "^3.991.0",
+    "chokidar": "^5.0.0",
+    "fs-extra": "^11.3.3",
+    "sharp": "^0.34.5",
+    "uuid": "^13.0.0"
   }
 }

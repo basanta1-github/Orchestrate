@@ -62,7 +62,11 @@ export abstract class BaseProcessor {
 
       await jobRepo.update(
         { id: job.data.jobId },
-        { status: JobStatus.COMPLETED, completedAt: now },
+        {
+          status: JobStatus.COMPLETED,
+          completedAt: now,
+          metadata: { ...job.data.metadata, result: job.data.result },
+        },
       );
 
       await logRepo.save({

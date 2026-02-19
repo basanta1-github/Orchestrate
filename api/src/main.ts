@@ -25,7 +25,7 @@ async function bootstrap() {
   } catch (err) {
     console.error('🔥 BOOTSTRAP ERROR:', err);
     // If the error has a stack trace, print it
-    if (err.stack) {
+    if (err instanceof Error && err.stack) {
       console.error(err.stack);
     }
     process.exit(1); // stop the app

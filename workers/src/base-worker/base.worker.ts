@@ -31,13 +31,13 @@ export abstract class BaseWorker {
     this.worker = new Worker(
       this.queueName,
       async (job: BullJob) => {
-        console.log("Inside worker callback");
+        // console.log("Inside worker callback");
         if (!processor) {
           console.error("Processor is undefined! Did you pass it to super()?");
           throw new Error("Processor missing");
         }
-        console.log("this.processor:", processor);
-        console.log("execute:", processor?.execute);
+        // console.log("this.processor:", processor);
+        // console.log("execute:", processor?.execute);
         return processor.execute(job);
       },
       {
