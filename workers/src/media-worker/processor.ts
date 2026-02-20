@@ -13,6 +13,18 @@ import { uploadFileLocal, uploadFileS3 } from "./storageService";
 
 @Injectable()
 export class MediaProcessor extends BaseProcessor {
+  // for image
+  private readonly MAX_WIDTH = 5000;
+  private readonly MAX_HEIGHT = 5000;
+  private readonly MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+  private readonly ALLOWED_FORMATS = ["jpeg", "png", "jpg", "webp"];
+  private readonly ALLOWED_FILTERS = [
+    "grayscale",
+    "rotate",
+    "flip",
+    "flop",
+    "blur",
+  ];
   constructor(
     @InjectDataSource()
     dataSource: DataSource,
@@ -83,7 +95,7 @@ export class MediaProcessor extends BaseProcessor {
       local: localPath,
       s3: s3Path,
     };
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate work
+    // await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate work
     console.log(
       `[MediaProcessor] job ${job.data.jobId} processed successfully`,
     );
@@ -140,7 +152,7 @@ export class MediaProcessor extends BaseProcessor {
     await fs.ensureDir(path.dirname(outputPath));
 
     let imageBuffer: Buffer;
-    if (fileUrl.startsWith("http") || fileUrl.startsWith("https")) {
+    if (typeof fileUrl === "string" && fileUrl.startsWith("http")) {
       const response = await axios.get(fileUrl, {
         responseType: "arraybuffer",
         timeout: 10000,
@@ -151,18 +163,16 @@ export class MediaProcessor extends BaseProcessor {
           Referer: fileUrl,
         },
       });
+      if (response.data.length > this.MAX_FILE_SIZE) {
+        throw new Error("File too large. Max 20MB allowed");
+      }
       imageBuffer = Buffer.from(response.data);
     } else {
       imageBuffer = await fs.readFile(fileUrl);
     }
-    //fetch and process
-    let processor = sharp(imageBuffer).resize(width, height, {
-      fit: "cover",
-      withoutEnlargement: true,
-    });
-
     // normalizing the filters for the for each loop
     let safeFilters: string[] = [];
+
     if (Array.isArray(filters)) {
       safeFilters = filters;
     } else if (typeof filters === "string") {
@@ -173,6 +183,14 @@ export class MediaProcessor extends BaseProcessor {
         safeFilters = [filters];
       }
     }
+    this.validateImageInput(width, height, format, safeFilters);
+
+    //fetch and process
+    let processor = sharp(imageBuffer).resize(width, height, {
+      fit: "cover",
+      withoutEnlargement: true,
+    });
+
     // apply filters dynamically
     safeFilters.forEach((filter) => {
       switch (filter.toLowerCase()) {
@@ -200,5 +218,29 @@ export class MediaProcessor extends BaseProcessor {
     await processor.toFile(outputPath);
 
     return outputFileName;
+  }
+
+  private validateImageInput(
+    width: number,
+    height: number,
+    format: string,
+    filters: string[],
+  ) {
+    if (!width || !height) {
+      throw new Error("width and height are required");
+    }
+    if (width > this.MAX_WIDTH || height > this.MAX_HEIGHT) {
+      throw new Error(
+        `dimensions exceed max ${this.MAX_HEIGHT || this.MAX_WIDTH}px`,
+      );
+    }
+    if (!this.ALLOWED_FORMATS.includes(format)) {
+      throw new Error(`Unsupported format : ${format}`);
+    }
+    filters.forEach((f) => {
+      if (!this.ALLOWED_FILTERS.includes(f.toLowerCase())) {
+        throw new Error(`Unsupported filter: ${f}`);
+      }
+    });
   }
 }

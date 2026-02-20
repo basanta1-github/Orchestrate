@@ -42,6 +42,7 @@ export abstract class BaseWorker {
       },
       {
         connection,
+        concurrency: 3,
         // remove it handeled by que service
         // attempts: 5,
         // backoff: { type: "exponential", delay: 2000 },
