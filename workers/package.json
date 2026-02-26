@@ -42,6 +42,7 @@
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.8",
+    "@types/pdfkit": "^0.17.5",
     "chokidar-cli": "^3.0.0",
     "express": "^5.2.1",
     "rimraf": "^6.1.2",

@@ -13,7 +13,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "shared:rebuild": "rimraf node_modules/@jobque/shared && npm install l ../shared/jobque-shared-1.0.0.tgz",
+    "shared:rebuild": "rimraf node_modules/@jobque/shared && npm install ../shared/jobque-shared-1.0.0.tgz",
     "workers:rebuild": "rimraf node_modules/@jobque/workers && npm install ../workers/jobque-workers-1.0.0.tgz",
     "rebuild:all": "npm run shared:rebuild && npm run workers:rebuild",
     "tgz:watch": "chokidar '../shared/*.tgz' '../workers/*.tgz' -c 'npm run rebuild:all'",

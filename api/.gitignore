@@ -5,6 +5,8 @@
 
 # for now auth
 auth
+processed_media
+
 
 # Logs
 logs

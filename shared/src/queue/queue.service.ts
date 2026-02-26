@@ -4,7 +4,10 @@ import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export class QueueService {
-  private queue: Queue;
+  private reportQueue: Queue;
+  private mediaQueue: Queue;
+
+  // private readonly DEFAULT_TIMEOUT = 3000;
 
   constructor() {
     // 🔍 DEBUG — THIS IS THE RIGHT PLACE
@@ -13,25 +16,34 @@ export class QueueService {
       "PARSED REDIS_PORT =",
       parseInt(process.env.REDIS_PORT ?? "6379", 10),
     );
-
-    this.queue = new Queue("jobs", {
-      connection: {
-        host: process.env.REDIS_HOST || "redis",
-        port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
-      },
-    });
+    const connection = {
+      host: process.env.REDIS_HOST || "redis",
+      port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
+    };
+    this.reportQueue = new Queue("report-jobs", { connection });
+    this.mediaQueue = new Queue("media-jobs", { connection });
   }
-
+  // generic enque method
   async enqueue(payload: JobQueuePayload) {
-    await this.queue.add(payload.jobType, payload, {
+    const queue = payload.jobType.startsWith("report")
+      ? this.reportQueue
+      : this.mediaQueue;
+
+    const returnedValue = queue.add(payload.jobType, payload, {
       priority: payload.priority,
       attempts: payload.retries,
       backoff: {
         type: "exponential",
         delay: 2000,
       },
+      // timeout: this.DEFAULT_TIMEOUT,
       removeOnComplete: false,
       removeOnFail: false,
+      // BullMQ does not officially support `timeout` in TS,
+      // but runtime will still enforce it if you want:
+      // You can handle timeout in the processor instead
     });
+
+    return returnedValue;
   }
 }

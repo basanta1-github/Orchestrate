@@ -24,7 +24,8 @@ import { DataSource } from 'typeorm';
       database: process.env.DB_NAME || 'job_que',
       autoLoadEntities: true,
       synchronize: true,
-      logging: true,
+      // logging: true // this gives all the logging of database in console
+      logging: ['error', 'warn'],
     }),
     DatabaseModule,
     JobsModule,

@@ -1,6 +1,7 @@
 import { Queue, Worker, Job as BullJob, KeepJobs, QueueEvents } from "bullmq";
 import { BaseProcessor } from "./base.processor";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import Redis from "ioredis";
 
 @Injectable()
 export abstract class BaseWorker {
@@ -9,10 +10,16 @@ export abstract class BaseWorker {
   protected queueEvents!: QueueEvents;
   protected logger = new Logger(BaseWorker.name);
 
-  constructor(
-    protected readonly queueName: string,
-    // protected readonly processor: BaseProcessor,
-  ) {}
+  // redis client for rate limiting
+  private redis = new Redis({
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT),
+  });
+
+  // in-memory counter for jobs per minute
+  // private jobTimeStamps: number[] = [];
+
+  constructor(protected readonly queueName: string) {}
 
   // child classes must implement this to return thieir processor
   // protected abstract getProcessor(): BaseProcessor;
@@ -31,10 +38,20 @@ export abstract class BaseWorker {
     this.worker = new Worker(
       this.queueName,
       async (job: BullJob) => {
-        // console.log("Inside worker callback");
         if (!processor) {
           console.error("Processor is undefined! Did you pass it to super()?");
           throw new Error("Processor missing");
+        }
+
+        // rate limit checkusing redis
+        const redisKey = `jobs:${job.data.tenantId}:${Math.floor(Date.now() / 60000)}`;
+        const current = await this.redis.incr(redisKey);
+        if (current === 1) {
+          await this.redis.expire(redisKey, 60); // set TTL of 1 minute
+        }
+        if (current > 5) {
+          const errMsg = `Job ${job.id} rejected: maximum 5 jobs/minute reached for tenant ${job.data.tenantId}`;
+          throw new Error(errMsg); // optional, to still trigger failed event
         }
         // console.log("this.processor:", processor);
         // console.log("execute:", processor?.execute);
@@ -43,7 +60,7 @@ export abstract class BaseWorker {
       {
         connection,
         concurrency: 3,
-        // remove it handeled by que service
+        // remove it handeled by queue service
         // attempts: 5,
         // backoff: { type: "exponential", delay: 2000 },
         // cast to KeepJobs to satisfy TS

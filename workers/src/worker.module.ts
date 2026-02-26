@@ -3,10 +3,12 @@ import { DatabaseModule } from "@jobque/shared";
 import { MediaProcessor } from "./media-worker/processor";
 import { MediaWorker } from "./media-worker/worker";
 import { MediaController } from "./media-worker/media.controller";
+import { ReportProcessor } from "./report-worker/processor";
+import { ReportWorker } from "./report-worker/worker";
 
 @Module({
   imports: [DatabaseModule],
-  providers: [MediaProcessor, MediaWorker],
+  providers: [MediaProcessor, MediaWorker, ReportProcessor, ReportWorker],
   controllers: [MediaController],
   exports: [MediaWorker, MediaProcessor], // optional, if you want to bootstrap it elsewhere
 })
