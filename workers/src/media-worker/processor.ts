@@ -9,7 +9,7 @@ import fs from "fs-extra";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import { uploadFileLocal, uploadFileS3 } from "./storageService";
+import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
 
 @Injectable()
 export class MediaProcessor extends BaseProcessor {
@@ -75,7 +75,7 @@ export class MediaProcessor extends BaseProcessor {
     // upload to local or s3 based on env uding the full path
 
     // local first
-    const localPath = await uploadFileLocal(fullOutputPath);
+    const localPath = await uploadFileLocal(fullOutputPath, "processed_media");
 
     // uptionally upload to s3
     let s3Path =

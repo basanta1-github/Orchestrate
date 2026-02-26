@@ -6,6 +6,7 @@
 # for now auth
 auth
 processed_media
+processed_report
 
 
 # Logs

@@ -8,7 +8,7 @@ import PDFDocument from "pdfkit";
 import fs from "fs-extra";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { uploadFileLocal, uploadFileS3 } from "../media-worker/storageService";
+import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
 import { table } from "console";
 
 const MAX_ROWS = 1000;
@@ -22,7 +22,6 @@ export class ReportProcessor extends BaseProcessor {
   }
   protected async process(job: BullJob): Promise<void> {
     const payload = job.data.metadata;
-    const tenantId = job.data.tenantId;
     const startTime = Date.now();
 
     // validation
@@ -50,28 +49,27 @@ export class ReportProcessor extends BaseProcessor {
     //   throw new Error(`Max data rows allowed: ${MAX_ROWS}`);
     // }
 
-    // generate pdf
+    // generate pdf in temp folder
 
-    const { fileName, filePath, pageCount } = await this.generatePDF(
+    const { fileName, tempPath, pageCount } = await this.generatePDF(
       payload,
       reportData,
     );
-
-    const stats = await fs.stat(filePath);
+    // check the file size before upload, if too large, throw error to avoid unnecessary upload cost and storage issues
+    const stats = await fs.stat(tempPath);
 
     if (stats.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       throw new Error("Generated PDF exceeds allowed size limit");
     }
-    // upload file
 
     // upload to local first
-    const localPath = await uploadFileLocal(filePath);
+    const localPath = await uploadFileLocal(tempPath, "processed_report");
 
     // uploaed to s3
     let s3Path: string | null = null;
 
     if (process.env.USE_S3 === "true") {
-      s3Path = await uploadFileS3(filePath, fileName);
+      s3Path = await uploadFileS3(tempPath, fileName);
     }
     // attach result to the job so that baseProcessor can persist metadata
     job.data.result = {
@@ -88,28 +86,28 @@ export class ReportProcessor extends BaseProcessor {
         durationMs: Date.now() - startTime,
       },
     };
-    // clean up temp files if needed
+    // clean up the temp files and folders
     if (process.env.CLEAN_TEMP_FILES === "true") {
-      await fs.remove(filePath);
+      const tempDir = path.join(process.cwd(), "generate_report");
+      if (await fs.pathExists(tempDir)) {
+        await fs.remove(tempDir); // deletes folder and all contents
+      }
     }
   }
 
   private async generatePDF(payload: any, data: any[]) {
     const outputFileName = `${uuidv4()}.pdf`;
-    const outputDir = path.join(
-      process.cwd(),
-      "processed_reports",
-      outputFileName,
-    );
-    await fs.ensureDir(path.dirname(outputDir));
+    const tempDir = path.join(process.cwd(), "generate_report");
+    await fs.ensureDir(tempDir);
+    const tempPath = path.join(tempDir, outputFileName);
 
     return new Promise<{
       fileName: string;
-      filePath: string;
+      tempPath: string;
       pageCount: number;
     }>((resolve, reject) => {
       const doc = new PDFDocument({ margin: 40 });
-      const stream = fs.createWriteStream(outputDir);
+      const stream = fs.createWriteStream(tempPath);
 
       let pageCount = 1;
 
@@ -133,7 +131,7 @@ export class ReportProcessor extends BaseProcessor {
       doc.end();
 
       stream.on("finish", () =>
-        resolve({ fileName: outputFileName, filePath: outputDir, pageCount }),
+        resolve({ fileName: outputFileName, tempPath, pageCount }),
       );
       stream.on("error", reject);
     });

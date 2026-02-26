@@ -10,20 +10,26 @@ const s3 = new S3Client({
   // },
 });
 
-export async function uploadFileLocal(fullPath: string): Promise<string> {
-  const fileName = path.basename(fullPath);
-  const localDir = path.join(process.cwd(), "processed_media");
+export async function uploadFileLocal(
+  filePath: string,
+  folder: string = "processed_storage",
+): Promise<{ url: string; path: string }> {
+  const fileName = path.basename(filePath);
+  const localDir = path.join(process.cwd(), folder);
 
   //make sure folder exists
   await fs.ensureDir(localDir);
 
   // copy only if not there
   const destinationPath = path.join(localDir, fileName);
-  if (fullPath !== destinationPath) {
-    await fs.copyFile(fullPath, destinationPath);
+  if (filePath !== destinationPath) {
+    await fs.copyFile(filePath, destinationPath);
   }
   // return destinationPath;
-  return `http://localhost:3001/processed_media/${fileName}`;
+  return {
+    url: `http://localhost:3001/${folder}/${fileName}`,
+    path: destinationPath,
+  };
 }
 
 export async function uploadFileS3(
