@@ -6,6 +6,7 @@ import { Injectable } from "@nestjs/common";
 export class QueueService {
   private reportQueue: Queue;
   private mediaQueue: Queue;
+  private mlQueue: Queue;
 
   // private readonly DEFAULT_TIMEOUT = 3000;
 
@@ -22,12 +23,15 @@ export class QueueService {
     };
     this.reportQueue = new Queue("report-jobs", { connection });
     this.mediaQueue = new Queue("media-jobs", { connection });
+    this.mlQueue = new Queue("ml-jobs", { connection });
   }
   // generic enque method
   async enqueue(payload: JobQueuePayload) {
     const queue = payload.jobType.startsWith("report")
       ? this.reportQueue
-      : this.mediaQueue;
+      : payload.jobType.startsWith("media")
+        ? this.mediaQueue
+        : this.mlQueue;
 
     const returnedValue = queue.add(payload.jobType, payload, {
       priority: payload.priority,
