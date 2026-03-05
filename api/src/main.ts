@@ -15,6 +15,7 @@ async function bootstrap() {
         whitelist: true, // remove unknown fields
         forbidNonWhitelisted: true, // throw error on unknown fields
         transform: true, // convert payload into DTO class
+        enableDebugMessages: true,
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());

@@ -6,6 +6,7 @@ export * from "./entities/job.entity";
 export * from "./entities/tenant.entity";
 export * from "./entities/user.entity";
 export * from "./entities/worker.entity";
+export * from "./entities/notification.entity";
 
 // repositories
 // export * from "./repositories/job.repository";

@@ -8,6 +8,8 @@ import { ReportWorker } from "./report-worker/worker";
 import { ReportController } from "./report-worker/report.controller";
 import { MLProcessor } from "./ml-worker/processor";
 import { MLWorker } from "./ml-worker/worker";
+import { EmailProcessor } from "./email-worker/processor";
+import { EmailWorker } from "./email-worker/worker";
 
 @Module({
   imports: [DatabaseModule],
@@ -18,6 +20,8 @@ import { MLWorker } from "./ml-worker/worker";
     ReportWorker,
     MLProcessor,
     MLWorker,
+    EmailProcessor,
+    EmailWorker,
   ],
   controllers: [MediaController, ReportController],
   // exports: [MediaWorker, MediaProcessor], // optional, if you want to bootstrap it elsewhere

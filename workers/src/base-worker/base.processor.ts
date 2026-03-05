@@ -11,10 +11,7 @@ export abstract class BaseProcessor {
   constructor(
     @InjectDataSource()
     protected readonly dataSource: DataSource,
-  ) {
-    // super(dataSource);
-    console.log("MediaProcessor DataSource:", this.dataSource);
-  }
+  ) {}
 
   async execute(job: BullJob): Promise<void> {
     const jobRepo: Repository<Job> = this.dataSource.getRepository(Job);

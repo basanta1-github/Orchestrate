@@ -6,10 +6,19 @@ import { JobLog } from "./entities/job-log.entity";
 import { User } from "./entities/user.entity";
 import { Tenant } from "./entities/tenant.entity";
 import { Worker } from "./entities/worker.entity";
+import { Notification } from "./entities/notification.entity";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Job, JobAttempt, JobLog, User, Tenant, Worker]),
+    TypeOrmModule.forFeature([
+      Job,
+      JobAttempt,
+      JobLog,
+      User,
+      Tenant,
+      Worker,
+      Notification,
+    ]),
   ],
   exports: [TypeOrmModule], // <-- this exports all repositories makes the repo of above for feature abailablee in job module
 })
