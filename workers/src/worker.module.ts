@@ -10,9 +10,13 @@ import { MLProcessor } from "./ml-worker/processor";
 import { MLWorker } from "./ml-worker/worker";
 import { EmailProcessor } from "./email-worker/processor";
 import { EmailWorker } from "./email-worker/worker";
+import { ETLProcessor } from "./etl-worker/processor";
+import { ETLWorker } from "./etl-worker/worker";
+import { ETLService } from "./etl-worker/service";
+import { QueueModule } from "@jobque/shared";
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, QueueModule],
   providers: [
     MediaProcessor,
     MediaWorker,
@@ -22,6 +26,9 @@ import { EmailWorker } from "./email-worker/worker";
     MLWorker,
     EmailProcessor,
     EmailWorker,
+    ETLService,
+    ETLProcessor,
+    ETLWorker,
   ],
   controllers: [MediaController, ReportController],
   // exports: [MediaWorker, MediaProcessor], // optional, if you want to bootstrap it elsewhere

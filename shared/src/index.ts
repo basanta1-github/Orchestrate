@@ -7,3 +7,6 @@ export * from "./database";
 
 // jobs exports
 export * from "./jobs";
+
+// queue module export
+export * from "./queue/queue.module";

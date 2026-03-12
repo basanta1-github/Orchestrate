@@ -19,6 +19,14 @@ export abstract class BaseProcessor {
       this.dataSource.getRepository(JobAttempt);
     const logRepo = this.dataSource.getRepository(JobLog);
 
+    const existingJob = await jobRepo.findOne({
+      where: { id: job.data.jobId },
+    });
+    if (existingJob?.status === JobStatus.COMPLETED) {
+      this.logger.warn(`Job ${job.data.jobId} already completed. Skipping.`);
+      return;
+    }
+
     this.logger.log(`Processing Job ${job.id} (${job.name})`);
 
     const attempt = JobAttemptRepo.create({

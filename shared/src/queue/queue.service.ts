@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export class QueueService {
-  private queues : Map <string,Queue>
+  private queues: Map<string, Queue>;
 
   // private readonly DEFAULT_TIMEOUT = 3000;
 
@@ -15,20 +15,25 @@ export class QueueService {
       "PARSED REDIS_PORT =",
       parseInt(process.env.REDIS_PORT ?? "6379", 10),
     );
+    const supportedQueues = [
+      "email-jobs",
+      "media-jobs",
+      "report-jobs",
+      "ml-jobs",
+      "etl-jobs",
+    ];
     const connection = {
       host: process.env.REDIS_HOST || "redis",
       port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
     };
-     this.queues = new Map([
-      ["report-jobs", new Queue("report-jobs", { connection })],
-      ["media-jobs", new Queue("media-jobs", { connection })],
-      ["ml-jobs", new Queue("ml-jobs", { connection })],
-      ["email-jobs", new Queue("email-jobs", { connection })],
-    ]);
+
+    this.queues = new Map(
+      supportedQueues.map((name) => [name, new Queue(name, { connection })]),
+    );
   }
   // generic enque method
   async enqueue(payload: JobQueuePayload) {
-    const queue = this.queues.get(payload.jobType)
+    const queue = this.queues.get(payload.jobType);
 
     if (!queue) {
       throw new Error(`Queue for job type "${payload.jobType}" not found`);

@@ -18,7 +18,7 @@ export class JobsService {
   async createAndEnqueue(dto: CreateJobDto, userId: string, tenantId: string) {
     const job = this.jobRepo.create({
       type: dto.jobType,
-      metadata: dto.payload,
+      metadata: dto.metadata,
       priority: dto.priority ?? 5,
       retries: 3,
       status: JobStatus.QUEUED,
