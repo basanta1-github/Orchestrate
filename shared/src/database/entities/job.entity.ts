@@ -14,11 +14,15 @@ import { JobAttempt } from "./job-attempt.entity";
 import { JobLog } from "./job-log.entity";
 import { Worker } from "./worker.entity";
 import { JobStatus } from "../../jobs/jobs.constants";
+import { RecurringJob } from "./recurring-jobs.entity";
 
 @Entity("jobs")
 export class Job {
   @PrimaryGeneratedColumn("uuid")
   id: string;
+
+  @Column({ type: "int", nullable: true })
+  queueSequence?: number; // tracks normal job sequence per queue
 
   @Column()
   type: string;
@@ -44,6 +48,24 @@ export class Job {
   @Column({ type: "timestamp", nullable: true })
   completedAt?: Date;
 
+  // inside Job class
+
+  @Column({ type: "bigint", nullable: true })
+  delayMs?: number;
+
+  @Column({ nullable: true })
+  cron?: string;
+
+  @Column({ nullable: true, unique: true })
+  idempotencyKey?: string;
+
+  @CreateDateColumn()
+  scheduledAt: Date;
+
+  // to track the recurring jobs
+  @Column({ nullable: true })
+  recurringJobId?: string;
+
   // Relations
   @ManyToOne(() => Tenant, (tenant) => tenant.jobs)
   tenant: Tenant;
@@ -59,4 +81,7 @@ export class Job {
 
   @ManyToOne(() => Worker, (worker) => worker, { nullable: true })
   worker: Worker;
+
+  @ManyToOne(() => RecurringJob, { nullable: true })
+  recurringJob: RecurringJob;
 }

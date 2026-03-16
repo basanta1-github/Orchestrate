@@ -5,6 +5,7 @@ import {
   IsObject,
   Min,
   Max,
+  IsNumber,
 } from "class-validator";
 export class CreateJobDto {
   @IsString()
@@ -18,4 +19,27 @@ export class CreateJobDto {
   @Min(1)
   @Max(10)
   priority?: number;
+
+  // number of retries
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(10)
+  retries?: number;
+
+  // delay scheduling
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  delayMs?: number;
+
+  // cron scheduling
+  @IsOptional()
+  @IsString()
+  cron?: string;
+
+  // idempotency protection
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
 }

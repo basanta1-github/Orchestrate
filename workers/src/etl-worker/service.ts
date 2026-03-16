@@ -10,7 +10,7 @@ export interface ETLPayload {
   target: string; // eg processed_users_table
   data?: any; // optional pre fetched data
   dependsOn?: string[]; // job id this job depends on meaning the job id inside depends on must finish first
-  nextJob?: ETLPayload[];
+  nextJob?: ETLPayload;
 }
 
 @Injectable()

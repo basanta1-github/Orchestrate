@@ -8,6 +8,8 @@ import { Tenant } from "./entities/tenant.entity";
 import { Worker } from "./entities/worker.entity";
 import { Notification } from "./entities/notification.entity";
 import { ProcessedUser } from "./entities/processed-user.entity";
+import { RecurringJob } from "./entities/recurring-jobs.entity";
+import { QueueSequence } from "./entities/queueSequence.entity";
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { ProcessedUser } from "./entities/processed-user.entity";
       Worker,
       Notification,
       ProcessedUser,
+      RecurringJob,
+      QueueSequence,
     ]),
   ],
   exports: [TypeOrmModule], // <-- this exports all repositories makes the repo of above for feature abailablee in job module

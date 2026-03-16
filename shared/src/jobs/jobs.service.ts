@@ -5,6 +5,7 @@ import { Job } from "../database/entities/job.entity";
 import { QueueService } from "../queue/queue.service";
 import { CreateJobDto } from "./dto/create-job.dto";
 import { JobStatus } from "./jobs.constants";
+import { RecurringJob } from "../database/entities/recurring-jobs.entity";
 
 @Injectable()
 export class JobsService {
@@ -12,33 +13,69 @@ export class JobsService {
   constructor(
     @InjectRepository(Job)
     private readonly jobRepo: Repository<Job>,
+    @InjectRepository(RecurringJob)
+    readonly recurringJobRepo: Repository<RecurringJob>,
     private readonly queueService: QueueService,
   ) {}
 
   async createAndEnqueue(dto: CreateJobDto, userId: string, tenantId: string) {
+    let recurringJobId: string | undefined;
+
+    if (dto.cron) {
+      const recurring = this.recurringJobRepo.create({
+        jobType: dto.jobType,
+        cron: dto.cron,
+        metadata: dto.metadata,
+        tenant: { id: tenantId },
+        user: { id: userId },
+      });
+
+      const savedRecurring = await this.recurringJobRepo.save(recurring);
+      recurringJobId = savedRecurring.id;
+    }
+
+    const Scheduled = !!dto.delayMs || !!dto.cron;
     const job = this.jobRepo.create({
       type: dto.jobType,
       metadata: dto.metadata,
       priority: dto.priority ?? 5,
       retries: 3,
-      status: JobStatus.QUEUED,
+      status: Scheduled ? JobStatus.SCHEDULED : JobStatus.QUEUED,
       tenant: { id: tenantId }, // TypeORM accepts object with only id for ManyToOne
       user: { id: userId },
+      delayMs: dto.delayMs,
+      cron: dto.cron,
+      idempotencyKey: dto.idempotencyKey,
+      recurringJob: recurringJobId ? { id: recurringJobId } : undefined,
+      scheduledAt: dto.delayMs
+        ? new Date(Date.now() + dto.delayMs)
+        : new Date(),
     });
 
     const savedJob = await this.jobRepo.save(job);
-    // // 🔹 Observability hook: log after saving but before enqueue
-    this.logger.log(`Job queued: ${savedJob.id} | Type: ${savedJob.type} 
-            | Tenant: ${tenantId} | User: ${userId}`);
+    const isScheduled = !!savedJob.delayMs || !!savedJob.cron;
+    const logMessage = isScheduled
+      ? `Job scheduled: ${savedJob.id} | Type: ${savedJob.type} | Tenant: ${tenantId} | User: ${userId} | Scheduled At: ${savedJob.scheduledAt}`
+      : `Job queued: ${savedJob.id} | Type: ${savedJob.type} | Tenant: ${tenantId} | User: ${userId}`;
+
+    this.logger.log(logMessage);
 
     try {
       await this.queueService.enqueue({
         jobId: savedJob.id,
+        recurringJobId,
         jobType: savedJob.type,
         tenantId: tenantId,
         priority: savedJob.priority,
         retries: savedJob.retries,
         metadata: savedJob.metadata,
+        delayMs: savedJob.delayMs,
+        cron: savedJob.cron,
+        idempotencyKey: savedJob.idempotencyKey,
+        // ⚠ Only include jobId for normal/delayed jobs
+        // ...(savedJob.cron
+        //   ? {}
+        //   : { jobId: savedJob.idempotencyKey ?? savedJob.id }),
       });
       console.log(`Enqueued job ${savedJob.id} successfully.`);
     } catch (error) {

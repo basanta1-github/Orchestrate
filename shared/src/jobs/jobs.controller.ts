@@ -6,16 +6,21 @@ import {
   Param,
   Get,
   Query,
+  Req,
 } from "@nestjs/common";
 import { JobsService } from "./jobs.service";
 import { CreateJobDto } from "./dto/create-job.dto";
 // import {JwtAuthGuard} from '../auth/jwt-auth.guard'
 import { DEMO_USER } from "../demo-user";
+import { QueueService } from "../queue/queue.service";
 
 @Controller("jobs")
 // @UseGuards(JwtAuthGuard)
 export class JobsController {
-  constructor(private readonly jobsService: JobsService) {}
+  constructor(
+    private readonly jobsService: JobsService,
+    private readonly queueService: QueueService,
+  ) {}
 
   // create job
   @Post()
@@ -29,7 +34,39 @@ export class JobsController {
     // Use fake user and tenant IDs for now
     const { id: userId, tenantId } = DEMO_USER;
     const job = await this.jobsService.createAndEnqueue(dto, userId, tenantId);
+    return { success: true, job };
+  }
+  @Post("schedule")
+  async scheduleJob(@Body() dto: CreateJobDto) {
+    const { id: userId, tenantId } = DEMO_USER;
+    const job = await this.jobsService.createAndEnqueue(dto, userId, tenantId);
+
     return job;
+  }
+
+  // stop recurring jobs
+
+  @Post("list-recurring")
+  async listRecurring(@Body() body: { jobType: string }) {
+    const { jobType } = body;
+    return this.queueService.listRecurringJobs(jobType);
+  }
+  @Post("stop-recurring")
+  async stopRecurring(
+    @Body()
+    body: {
+      jobType: string;
+      cronPattern: string;
+      jobId?: string;
+    },
+  ) {
+    const { jobType, cronPattern, jobId } = body;
+
+    if (!jobType || !cronPattern) {
+      return { message: "jobType and cronPattern are required" };
+    }
+
+    return this.queueService.stopRecurringJob(jobType, cronPattern, jobId);
   }
 
   // fetch single job by ID

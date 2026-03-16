@@ -1,8 +1,16 @@
 import { Job as BullJob } from "bullmq";
 import { DataSource, Repository } from "typeorm";
-import { Job, JobStatus, JobAttempt, JobLog } from "@jobque/shared";
+import {
+  Job,
+  JobStatus,
+  JobAttempt,
+  JobLog,
+  QueueSequence,
+  RecurringJob,
+} from "@jobque/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
+import { queue } from "sharp";
 
 @Injectable()
 export abstract class BaseProcessor {
@@ -18,16 +26,58 @@ export abstract class BaseProcessor {
     const JobAttemptRepo: Repository<JobAttempt> =
       this.dataSource.getRepository(JobAttempt);
     const logRepo = this.dataSource.getRepository(JobLog);
+    const queueSeqRepo = this.dataSource.getRepository(QueueSequence);
+    const recurringJobrepo = this.dataSource.getRepository(RecurringJob);
 
     const existingJob = await jobRepo.findOne({
       where: { id: job.data.jobId },
     });
-    if (existingJob?.status === JobStatus.COMPLETED) {
+    const isRecurring = !!job.opts.repeat;
+
+    if (existingJob?.status === JobStatus.COMPLETED && !isRecurring) {
       this.logger.warn(`Job ${job.data.jobId} already completed. Skipping.`);
       return;
     }
 
-    this.logger.log(`Processing Job ${job.id} (${job.name})`);
+    // sequence tracking
+
+    let sequenceNumber = 0;
+
+    if (!isRecurring) {
+      let queSeq = await queueSeqRepo.findOne({
+        where: { queueName: job.queueName },
+      });
+      if (!queSeq) {
+        queSeq = queueSeqRepo.create({
+          queueName: job.queueName,
+          lastSequence: 0,
+        });
+      }
+      queSeq.lastSequence += 1;
+      sequenceNumber = queSeq.lastSequence;
+      await queueSeqRepo.save(queSeq);
+
+      // update job  entity
+      await jobRepo.update(
+        { id: job.data.jobId },
+        { queueSequence: sequenceNumber },
+      );
+    } else if (isRecurring && job.data.recurringJobId) {
+      // recurring job: use recurringJob.runcount
+      const recurringJob = await recurringJobrepo.findOne({
+        where: { id: job.data.recurringJobId },
+      });
+      if (recurringJob) {
+        recurringJob.runCount += 1;
+        sequenceNumber = recurringJob.runCount;
+        await recurringJobrepo.save(recurringJob);
+      }
+    }
+    this.logger.log(
+      !isRecurring
+        ? `Processing Job ${sequenceNumber} (${job.name}) in queue ${job.queueName}`
+        : `Processing Recurring Job ${job.data.jobId} Run ${sequenceNumber} (${job.name})`,
+    );
 
     const attempt = JobAttemptRepo.create({
       job: { id: job.data.jobId }, // relation reference
@@ -49,7 +99,7 @@ export abstract class BaseProcessor {
     await logRepo.save({
       job: { id: job.data.jobId },
       message: "Job attempt started",
-      data: { attemptNumber: attempt.attemptNumber },
+      data: { attemptNumber: attempt.attemptNumber, sequenceNumber },
     });
 
     try {
@@ -65,6 +115,7 @@ export abstract class BaseProcessor {
 
       // job success
 
+      // if (!job.opts.repeat) {
       await jobRepo.update(
         { id: job.data.jobId },
         {
@@ -73,6 +124,7 @@ export abstract class BaseProcessor {
           metadata: { ...job.data.metadata, result: job.data.result },
         },
       );
+      // }
 
       await logRepo.save({
         job: { id: job.data.jobId },
@@ -80,7 +132,11 @@ export abstract class BaseProcessor {
         data: { attemptNumber: attempt.attemptNumber },
       });
 
-      this.logger.log(`Job ${job.id} completed successfully`);
+      this.logger.log(
+        !isRecurring
+          ? `Job ${sequenceNumber} completed successfully`
+          : `Recurring Job ${job.data.jobId} Run ${sequenceNumber} completed successfully`,
+      );
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       const now = new Date();

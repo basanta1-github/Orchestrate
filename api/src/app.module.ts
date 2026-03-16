@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JobsModule, DatabaseModule } from '@jobque/shared';
 import { WorkerModule } from '@jobque/workers';
-// import { MediaWorker } from '@jobque/workers/media-worker/worker';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';

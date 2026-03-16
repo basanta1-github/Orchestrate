@@ -6,4 +6,10 @@ export interface JobQueuePayload {
   priority: number;
   retries: number;
   metadata?: Record<string, any>;
+  delayMs?: number;
+  cron?: string;
+  idempotencyKey?: string;
+  recurringJobId?: string;
+
+  // use everyms for seconds instead of cron
 }
