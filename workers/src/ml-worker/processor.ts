@@ -9,13 +9,17 @@ import { MLJobPayload } from "./types";
 import { SummarizerEngine } from "./engines/summarizer.engine";
 import { ClassifierEngine } from "./engines/classification.engine";
 import { OCREngine } from "./engines/ocr.engine";
+import { ChainService } from "@jobque/shared";
 
 @Injectable()
 export class MLProcessor extends BaseProcessor {
   private readonly MAX_INPUT_SIZE = 10000; // Max characters for input
   private readonly INFERENCE_TIMEOUT = 3000; // 3 seconds timeout for inference
-  constructor(@InjectDataSource() dataSource: DataSource) {
-    super(dataSource);
+  constructor(
+    @InjectDataSource() dataSource: DataSource,
+    chainService: ChainService,
+  ) {
+    super(dataSource, chainService);
   }
   protected async process(job: BullJob): Promise<void> {
     // read from metadata

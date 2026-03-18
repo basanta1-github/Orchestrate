@@ -7,10 +7,10 @@ import {
   JobLog,
   QueueSequence,
   RecurringJob,
+  ChainService,
 } from "@jobque/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
-import { queue } from "sharp";
 
 @Injectable()
 export abstract class BaseProcessor {
@@ -19,6 +19,7 @@ export abstract class BaseProcessor {
   constructor(
     @InjectDataSource()
     protected readonly dataSource: DataSource,
+    protected readonly chainService: ChainService,
   ) {}
 
   async execute(job: BullJob): Promise<void> {
@@ -114,8 +115,6 @@ export abstract class BaseProcessor {
       );
 
       // job success
-
-      // if (!job.opts.repeat) {
       await jobRepo.update(
         { id: job.data.jobId },
         {
@@ -124,7 +123,18 @@ export abstract class BaseProcessor {
           metadata: { ...job.data.metadata, result: job.data.result },
         },
       );
-      // }
+
+      // child jobs
+      try {
+        await this.chainService.triggerNextJobs(job.data.jobId);
+        this.logger.log(`Triggered child jobs for ${job.data.jobId}`);
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        this.logger.error(
+          `failed to trigger child jobs for ${job.data.jobId}`,
+          err.stack,
+        );
+      }
 
       await logRepo.save({
         job: { id: job.data.jobId },
@@ -166,6 +176,14 @@ export abstract class BaseProcessor {
           { status: JobStatus.FAILED, completedAt: now },
         );
       }
+
+      //  Handle failure strategy
+      // Optionally, i can:
+      // - Skip triggering dependent jobs (STRICT failure strategy)
+      // - Or mark dependent jobs as FAILED/LENIENT
+      // Example:
+      await this.chainService.handleParentFailure(job.data.jobId);
+
       this.logger.error(`Job ${job.id} failed`, err.stack);
 
       throw error; // rethrow -> BullMQ retry/backoff

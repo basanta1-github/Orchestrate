@@ -10,6 +10,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
+import { ChainService } from "@jobque/shared";
 
 @Injectable()
 export class MediaProcessor extends BaseProcessor {
@@ -28,8 +29,9 @@ export class MediaProcessor extends BaseProcessor {
   constructor(
     @InjectDataSource()
     dataSource: DataSource,
+    chainService: ChainService,
   ) {
-    super(dataSource);
+    super(dataSource, chainService);
   }
 
   protected async process(job: Bulljob): Promise<void> {

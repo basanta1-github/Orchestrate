@@ -5,6 +5,7 @@ import { STMPProvider } from "./provider/stmp.provider";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import {
+  ChainService,
   Notification,
   NotificationChanel,
   NotificationStatus,
@@ -19,8 +20,12 @@ export class EmailProcessor extends BaseProcessor {
   protected logger = new Logger(EmailProcessor.name);
   private hunter = new HunterService();
 
-  constructor(@InjectDataSource() dataSource: DataSource) {
-    super(dataSource);
+  constructor(
+    @InjectDataSource()
+    dataSource: DataSource,
+    chainService: ChainService,
+  ) {
+    super(dataSource, chainService);
   }
   protected async process(job: BullJob): Promise<void> {
     const { metadata } = job.data;

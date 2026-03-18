@@ -4,4 +4,6 @@ export enum JobStatus {
   COMPLETED = "COMPLETED",
   FAILED = "FAILED",
   SCHEDULED = "SCHEDULED",
+  SKIPPED = "SKIPPED",
+  PENDING = "PENDING",
 }

@@ -5,17 +5,18 @@ import { ETLService, ETLPayload } from "./service";
 import { randomUUID } from "crypto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
-import { Job, JobStatus, QueueService } from "@jobque/shared";
+import { ChainService, Job, JobStatus, QueueService } from "@jobque/shared";
 
 @Injectable()
 export class ETLProcessor extends BaseProcessor {
   constructor(
     @InjectDataSource()
     dataSource: DataSource,
+    chainService: ChainService,
     private readonly etlService: ETLService,
     private readonly queueService: QueueService,
   ) {
-    super(dataSource);
+    super(dataSource, chainService);
 
     console.log("etlService constructor =", this.etlService.constructor.name);
     // Should print "ETLService", not "DataSource"

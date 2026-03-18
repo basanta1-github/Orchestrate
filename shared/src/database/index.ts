@@ -8,6 +8,9 @@ export * from "./entities/user.entity";
 export * from "./entities/worker.entity";
 export * from "./entities/notification.entity";
 export * from "./entities/processed-user.entity";
+export * from "./entities/queueSequence.entity";
+export * from "./entities/recurring-jobs.entity";
+export * from "./entities/job-dependencies.entity";
 
 // repositories
 // export * from "./repositories/job.repository";

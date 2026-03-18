@@ -13,6 +13,7 @@ import { CreateJobDto } from "./dto/create-job.dto";
 // import {JwtAuthGuard} from '../auth/jwt-auth.guard'
 import { DEMO_USER } from "../demo-user";
 import { QueueService } from "../queue/queue.service";
+import { randomUUID } from "node:crypto";
 
 @Controller("jobs")
 // @UseGuards(JwtAuthGuard)

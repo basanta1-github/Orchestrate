@@ -10,6 +10,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
 import { table } from "console";
+import { ChainService } from "@jobque/shared";
 
 const MAX_ROWS = 1000;
 const MAX_FILE_SIZE_MB = 20;
@@ -17,8 +18,11 @@ const MAX_FILE_SIZE_MB = 20;
 
 @Injectable()
 export class ReportProcessor extends BaseProcessor {
-  constructor(@InjectDataSource() dataSource: DataSource) {
-    super(dataSource);
+  constructor(
+    @InjectDataSource() dataSource: DataSource,
+    chainService: ChainService,
+  ) {
+    super(dataSource, chainService);
   }
   protected async process(job: BullJob): Promise<void> {
     const payload = job.data.metadata;

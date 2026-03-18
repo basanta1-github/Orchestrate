@@ -13,5 +13,5 @@ export * from "./queue/queue.module";
 
 export * from "./demo-user";
 
-export * from "./database/entities/queueSequence.entity";
-export * from "./database/entities/recurring-jobs.entity";
+export * from "./chain/chain.service";
+export * from "./chain/chain.controller";

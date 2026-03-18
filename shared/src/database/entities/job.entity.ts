@@ -66,6 +66,13 @@ export class Job {
   @Column({ nullable: true })
   recurringJobId?: string;
 
+  //chaining job
+  @Column({ nullable: true })
+  workflowId?: string;
+
+  @Column({ nullable: true })
+  faliureStrategy?: "STRICT" | "LENIENT";
+
   // Relations
   @ManyToOne(() => Tenant, (tenant) => tenant.jobs)
   tenant: Tenant;

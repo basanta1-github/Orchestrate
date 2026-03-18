@@ -1,5 +1,11 @@
 import { Module } from "@nestjs/common";
-import { DatabaseModule, JobsModule, JobsService } from "@jobque/shared";
+import {
+  ChainController,
+  ChainService,
+  DatabaseModule,
+  JobsModule,
+  JobsService,
+} from "@jobque/shared";
 import { MediaProcessor } from "./media-worker/processor";
 import { MediaWorker } from "./media-worker/worker";
 import { MediaController } from "./media-worker/media.controller";
@@ -30,8 +36,9 @@ import { QueueModule } from "@jobque/shared";
     ETLProcessor,
     ETLWorker,
     JobsService,
+    ChainService,
   ],
-  controllers: [MediaController, ReportController],
+  controllers: [MediaController, ReportController, ChainController],
   // exports: [MediaWorker, MediaProcessor], // optional, if you want to bootstrap it elsewhere
 })
 export class WorkerModule {}
