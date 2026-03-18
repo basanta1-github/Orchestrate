@@ -76,8 +76,8 @@ export abstract class BaseProcessor {
     }
     this.logger.log(
       !isRecurring
-        ? `Processing Job ${sequenceNumber} (${job.name}) in queue ${job.queueName}`
-        : `Processing Recurring Job ${job.data.jobId} Run ${sequenceNumber} (${job.name})`,
+        ? `Processing Job ${sequenceNumber} (${job.name}) in queue ${job.queueName} priority ${job.opts.priority}`
+        : `Processing Recurring Job ${job.data.jobId} Run ${sequenceNumber} (${job.name}) `,
     );
 
     const attempt = JobAttemptRepo.create({

@@ -21,7 +21,7 @@ export class NotificationsController {
       jobType,
       jobId: payload.jobId,
       tenantId: payload.tenantId,
-      priority,
+      priorityLevel: payload.priorityLevel ?? "MEDIUM",
       retries,
       metadata: payload,
     });

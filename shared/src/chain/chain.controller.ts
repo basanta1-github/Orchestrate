@@ -26,6 +26,49 @@ export class ChainController {
     if (!dto.jobs || !Array.isArray(dto.jobs || dto.jobs.length === 0)) {
       throw new Error("Invalid jobs array");
     }
+
+    // ensure at least 1 root job exists
+    const hasRootJob = dto.jobs.some((j: any) => !j.dependsOn);
+    if (!hasRootJob) {
+      throw new BadRequestException(
+        "Invalid workflow: at least onejob musthave no dependencies (no root)",
+      );
+    }
+
+    // check for circular dependencies
+    function hasCircularDependency(jobs: any[]): boolean {
+      const graph: Record<string, string[]> = {};
+
+      for (const job of jobs) {
+        graph[job.key] = job.dependsOn ? [job.dependsOn] : [];
+      }
+      const visited = new Set<string>();
+      const recStack = new Set<string>();
+
+      function dfs(node: string): boolean {
+        if (!visited.has(node)) {
+          visited.add(node);
+          recStack.add(node);
+
+          for (const neighbour of graph[node] || []) {
+            if (!visited.has(neighbour) && dfs(neighbour)) return true;
+            else if (recStack.has(neighbour)) return true;
+          }
+        }
+        recStack.delete(node);
+        return false;
+      }
+      for (const node of Object.keys(graph)) {
+        if (dfs(node)) return true;
+      }
+      return false;
+    }
+
+    if (hasCircularDependency(dto.jobs)) {
+      throw new BadRequestException(
+        "Invalid workflow: circular dependency detected",
+      );
+    }
     const { id: userId, tenantId } = DEMO_USER;
     const workFlowId = randomUUID();
     const jobMap: Record<string, Job> = {};
@@ -43,7 +86,7 @@ export class ChainController {
         metadata: job.metadata ?? {},
         status: hasDependency ? JobStatus.PENDING : JobStatus.QUEUED,
         workFlowId,
-        priority: job.priority ?? 5,
+        priorityLevel: job.priorityLevel ?? "MEDIUM",
         retries: job.retries ?? 3,
         tenant: { id: tenantId },
         user: { id: userId },
@@ -73,7 +116,7 @@ export class ChainController {
         jobId: createdJob.id,
         jobType: createdJob.type,
         tenantId,
-        priority: createdJob.priority,
+        priorityLevel: createdJob.priorityLevel,
         retries: createdJob.retries,
         metadata: createdJob.metadata,
         idempotencyKey: createdJob.id,

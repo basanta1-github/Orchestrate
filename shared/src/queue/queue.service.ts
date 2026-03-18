@@ -35,13 +35,19 @@ export class QueueService {
       throw new Error(`Queue for job type "${payload.jobType}" not found`);
     }
 
+    const priorityMap: Record<string, number> = {
+      HIGH: 1,
+      MEDIUM: 2,
+      LOW: 10,
+    };
+
     const options: JobsOptions = {
-      priority: payload.priority,
       attempts: payload.retries,
       backoff: {
         type: "exponential",
         delay: 2000,
       },
+      priority: priorityMap[payload.priorityLevel ?? "MEDIUM"],
       // timeout: this.DEFAULT_TIMEOUT,
       removeOnComplete: false,
       removeOnFail: false,

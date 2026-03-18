@@ -30,8 +30,8 @@ export class Job {
   @Column({ type: "enum", enum: JobStatus, default: JobStatus.QUEUED })
   status: string;
 
-  @Column({ default: 0 })
-  priority: number;
+  @Column({ type: "enum", enum: ["HIGH", "MEDIUM", "LOW"], default: "MEDIUM" })
+  priorityLevel: "HIGH" | "MEDIUM" | "LOW";
 
   @Column({ default: 0 })
   retries: number;

@@ -68,7 +68,7 @@ export class ChainService {
         jobId: childJob.id,
         jobType: childJob.type,
         tenantId: childJob.tenant?.id,
-        priority: childJob.priority,
+        priorityLevel: childJob.priorityLevel ?? "MEDIUM",
         retries: childJob.retries,
         metadata: childJob.metadata,
       });

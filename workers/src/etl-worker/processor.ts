@@ -83,7 +83,7 @@ export class ETLProcessor extends BaseProcessor {
         jobId: newJobId,
         jobType: "etl-jobs",
         metadata: metadata.nextJob,
-        priority: job.data.priority ?? 1,
+        priorityLevel: job.data.priorityLevel ?? "MEDIUM",
         retries: job.opts.attempts ?? 5,
         tenantId: job.data.tenantId,
       });

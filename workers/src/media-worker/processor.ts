@@ -35,7 +35,12 @@ export class MediaProcessor extends BaseProcessor {
   }
 
   protected async process(job: Bulljob): Promise<void> {
-    console.log(`[MediaProcessor] processing media job`, job.data);
+    console.log(
+      `[MediaProcessor] processing media job`,
+      job.data,
+      "PRIORITY: ",
+      job.opts.priority,
+    );
 
     // simulate faliure if failtest is true
     if (job.data.metadata?.failTest) {

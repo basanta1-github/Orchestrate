@@ -18,7 +18,7 @@ export class CreateJobDto {
   @IsInt()
   @Min(1)
   @Max(10)
-  priority?: number;
+  priorityLevel?: "HIGH" | "MEDIUM" | "LOW";
 
   // number of retries
   @IsOptional()

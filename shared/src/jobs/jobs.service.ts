@@ -38,7 +38,7 @@ export class JobsService {
     const job = this.jobRepo.create({
       type: dto.jobType,
       metadata: dto.metadata,
-      priority: dto.priority ?? 5,
+      priorityLevel: dto.priorityLevel ?? "MEDIUM",
       retries: 3,
       status: Scheduled ? JobStatus.SCHEDULED : JobStatus.QUEUED,
       tenant: { id: tenantId }, // TypeORM accepts object with only id for ManyToOne
@@ -66,7 +66,7 @@ export class JobsService {
         recurringJobId,
         jobType: savedJob.type,
         tenantId: tenantId,
-        priority: savedJob.priority,
+        priorityLevel: savedJob.priorityLevel,
         retries: savedJob.retries,
         metadata: savedJob.metadata,
         delayMs: savedJob.delayMs,
@@ -179,7 +179,7 @@ export class JobsService {
       id: job.id,
       type: job.type,
       status: job.status,
-      priority: job.priority,
+      priority: job.priorityLevel,
       retries: job.retries,
       owner: {
         userId: job.user?.id,
