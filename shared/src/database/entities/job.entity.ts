@@ -30,8 +30,12 @@ export class Job {
   @Column({ type: "enum", enum: JobStatus, default: JobStatus.QUEUED })
   status: string;
 
-  @Column({ type: "enum", enum: ["HIGH", "MEDIUM", "LOW"], default: "MEDIUM" })
-  priorityLevel: "HIGH" | "MEDIUM" | "LOW";
+  @Column({
+    type: "enum",
+    enum: ["HIGH", "MEDIUM", "LOW", "NONE"],
+    default: "NONE",
+  })
+  priorityLevel: "HIGH" | "MEDIUM" | "LOW" | "NONE";
 
   @Column({ default: 0 })
   retries: number;
@@ -68,7 +72,7 @@ export class Job {
 
   //chaining job
   @Column({ nullable: true })
-  workflowId?: string;
+  workFlowId?: string;
 
   @Column({ nullable: true })
   faliureStrategy?: "STRICT" | "LENIENT";

@@ -10,6 +10,6 @@ import { ChainController } from "../chain/chain.controller";
 @Module({
   imports: [DatabaseModule, QueueModule],
   controllers: [JobsController, ChainController],
-  providers: [JobsService],
+  providers: [JobsService, ChainService],
 })
 export class JobsModule {}

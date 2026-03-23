@@ -44,22 +44,22 @@ export abstract class BaseWorker {
         }
 
         // rate limit checkusing redis
-        const redisKey = `jobs:${job.data.tenantId}:${Math.floor(Date.now() / 60000)}`;
-        const current = await this.redis.incr(redisKey);
-        if (current === 1) {
-          await this.redis.expire(redisKey, 60); // set TTL of 1 minute
-        }
-        if (current > 5) {
-          const errMsg = `Job ${job.id} rejected: maximum 5 jobs/minute reached for tenant ${job.data.tenantId}`;
-          throw new Error(errMsg); // optional, to still trigger failed event
-        }
+        // const redisKey = `jobs:${job.data.tenantId}:${Math.floor(Date.now() / 60000)}`;
+        // const current = await this.redis.incr(redisKey);
+        // if (current === 1) {
+        //   await this.redis.expire(redisKey, 60); // set TTL of 1 minute
+        // }
+        // if (current > 5) {
+        //   const errMsg = `Job ${job.id} rejected: maximum 5 jobs/minute reached for tenant ${job.data.tenantId}`;
+        //   throw new Error(errMsg); // optional, to still trigger failed event
+        // }
         // console.log("this.processor:", processor);
         // console.log("execute:", processor?.execute);
         return processor.execute(job);
       },
       {
         connection,
-        concurrency: 3,
+        concurrency: 1,
         // remove it handeled by queue service
         // attempts: 5,
         // backoff: { type: "exponential", delay: 2000 },
@@ -70,9 +70,15 @@ export abstract class BaseWorker {
     );
 
     this.queueEvents = new QueueEvents(this.queueName, { connection });
-    this.worker.on("active", (job) => this.logger.log(`Job ${job.id} started`));
-    this.worker.on("completed", (job, err) => {
-      this.logger.log(`Job completed: ${job.id}`);
+    this.worker.on("active", (job) =>
+      this.logger.log(
+        `ACTIVE BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
+      ),
+    );
+    this.worker.on("completed", (job) => {
+      this.logger.log(
+        `COMPLETED BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
+      );
     });
 
     this.worker.on("failed", async (job, err) => {

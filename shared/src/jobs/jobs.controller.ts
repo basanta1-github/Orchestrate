@@ -35,7 +35,7 @@ export class JobsController {
     // Use fake user and tenant IDs for now
     const { id: userId, tenantId } = DEMO_USER;
     const job = await this.jobsService.createAndEnqueue(
-      { ...dto, priorityLevel: dto.priorityLevel ?? "MEDIUM" },
+      { ...dto, priorityLevel: dto.priorityLevel ?? "NONE" },
       userId,
       tenantId,
     );

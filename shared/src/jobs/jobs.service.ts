@@ -38,7 +38,7 @@ export class JobsService {
     const job = this.jobRepo.create({
       type: dto.jobType,
       metadata: dto.metadata,
-      priorityLevel: dto.priorityLevel ?? "MEDIUM",
+      priorityLevel: dto.priorityLevel ?? "NONE",
       retries: 3,
       status: Scheduled ? JobStatus.SCHEDULED : JobStatus.QUEUED,
       tenant: { id: tenantId }, // TypeORM accepts object with only id for ManyToOne

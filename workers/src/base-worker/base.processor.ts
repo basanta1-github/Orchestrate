@@ -76,8 +76,8 @@ export abstract class BaseProcessor {
     }
     this.logger.log(
       !isRecurring
-        ? `Processing Job ${sequenceNumber} (${job.name}) in queue ${job.queueName} priority ${job.opts.priority}`
-        : `Processing Recurring Job ${job.data.jobId} Run ${sequenceNumber} (${job.name}) `,
+        ? `Processing DBJob=${job.data.jobId} BullJob=${job.id} Seq=${sequenceNumber} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`
+        : `Processing Recurring DBJob=${job.data.jobId} BullJob=${job.id} Run=${sequenceNumber} Queue=${job.queueName}`,
     );
 
     const attempt = JobAttemptRepo.create({
@@ -126,12 +126,12 @@ export abstract class BaseProcessor {
 
       // child jobs
       try {
-        await this.chainService.triggerNextJobs(job.data.jobId);
-        this.logger.log(`Triggered child jobs for ${job.data.jobId}`);
+        await this.chainService.onJobCompleted(job.data.jobId);
+        this.logger.log(`Scheduled next workflow step after ${job.data.jobId}`);
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         this.logger.error(
-          `failed to trigger child jobs for ${job.data.jobId}`,
+          `Failed workflow scheduling after ${job.data.jobId}`,
           err.stack,
         );
       }
