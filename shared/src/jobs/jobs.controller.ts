@@ -16,7 +16,11 @@ import { DEMO_USER } from "../auth/demo-user";
 import { QueueService } from "../queue/queue.service";
 import { AuthUser } from "../auth/auth.user.decorator";
 import { UserRole } from "../database";
+// import { TenantGuard } from "../cross_tenant/tenant_guard";
+// import { TenantResource } from "../cross_tenant/tenant.decorator";
+// import { JwtTenant } from "../cross_tenant/tenant.decorator";
 
+// @UseGuards(TenantGuard)
 @Controller("jobs")
 export class JobsController {
   constructor(
@@ -34,7 +38,7 @@ export class JobsController {
     //     return this.jobsService.createAndEnqueue(dto, userId, tenantId)
 
     // Use fake user and tenant IDs for now
-    const { id: userId, tenantId } = user;
+    const { userId, tenantId } = user;
     const job = await this.jobsService.createAndEnqueue(
       { ...dto, priorityLevel: dto.priorityLevel ?? "NONE" },
       userId,
@@ -44,7 +48,7 @@ export class JobsController {
   }
   @Post("schedule")
   async scheduleJob(@Body() dto: CreateJobDto, @AuthUser() user: any) {
-    const { id: userId, tenantId } = user;
+    const { userId, tenantId } = user;
     const job = await this.jobsService.createAndEnqueue(dto, userId, tenantId);
 
     return job;
@@ -90,8 +94,13 @@ export class JobsController {
 
   // fetch single job by ID
   @Get(":id")
-  async getJob(@Param("id") id: string, @AuthUser() user: any) {
-    const { id: userId, tenantId } = user;
+  // @TenantResource("tenantId")
+  async getJob(
+    @Param("id") id: string,
+    @AuthUser() user: any,
+    //  @JwtTenant() tenant:string
+  ) {
+    const { userId, tenantId } = user;
     // service should verify this job belongs to user.tenantId
     // if not, throw NotFoundException (don't reveal the job exists)
     const job = await this.jobsService.getJobById(id, userId, tenantId);
@@ -100,8 +109,9 @@ export class JobsController {
 
   // list all jobs with optional filters
   @Get()
+  // @TenantResource("tenantId")
   async listJobs(@Query() query: any, @AuthUser() user: any) {
-    const { id: userId, tenantId } = user;
+    const { userId, tenantId } = user;
     const job = await this.jobsService.listJobs(userId, tenantId, query);
     return job;
   }

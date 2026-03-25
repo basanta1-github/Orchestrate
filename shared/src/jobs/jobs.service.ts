@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Job } from "../database/entities/job.entity";
@@ -106,6 +111,16 @@ export class JobsService {
       throw new NotFoundException("Job not found");
     }
 
+    // if (job.tenant.id !== tenantId) {
+    //   throw new ForbiddenException(
+    //     "Access denied: cross-tenant access blocked",
+    //   );
+    // }
+
+    // if (job.user.id !== userId) {
+    //   throw new ForbiddenException("Access denied: not your job");
+    // }
+
     return this.formatJobResponse(job);
   }
 
@@ -118,6 +133,10 @@ export class JobsService {
       .leftJoin("job.tenant", "tenant")
       .where("user.id = :userId", { userId })
       .andWhere("tenant.id = :tenantId", { tenantId });
+    // const query = this.jobRepo
+    //   .createQueryBuilder("job")
+    //   .where("job.userId = :userId", { userId })
+    //   .andWhere("job.tenantId = :tenantId", { tenantId });
 
     if (filters.status) {
       query.andWhere("job.status = :status", {

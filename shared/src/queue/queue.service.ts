@@ -1,54 +1,64 @@
-import { JobsOptions, Queue } from "bullmq";
+import { JobsOptions, Queue, RepeatOptions } from "bullmq";
 import { JobQueuePayload } from "./job-queue.payload";
 import { Injectable, Logger } from "@nestjs/common";
-import { RecurringJob } from "../database/entities/recurring-jobs.entity";
-import { Repository } from "typeorm";
+
+const QUEUE_MAP: Record<string, string[]> = {
+  // ml: ["text_summarization", "classification", "ocr"],
+  media: ["video_transcode", "audio_transcode", "image_resize"],
+  etl: ["etl-jobs"],
+  ml: ["ml-jobs"],
+  email: ["email-jobs"],
+  report: ["report-jobs"],
+};
 
 @Injectable()
 export class QueueService {
   private queues: Map<string, Queue>;
-
-  // private readonly DEFAULT_TIMEOUT = 3000;
+  private readonly logger = new Logger(QueueService.name);
+  private readonly priorityMap: Record<string, number> = {
+    HIGH: 1,
+    MEDIUM: 2,
+    LOW: 10,
+    NONE: 20,
+  };
 
   constructor() {
     const connection = {
       host: process.env.REDIS_HOST || "redis",
       port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
     };
-    const supportedQueues = [
-      "email-jobs",
-      "media-jobs",
-      "report-jobs",
-      "ml-jobs",
-      "etl-jobs",
-    ];
-
     this.queues = new Map(
-      supportedQueues.map((name) => [name, new Queue(name, { connection })]),
+      Object.keys(QUEUE_MAP).map((queueName) => [
+        queueName,
+        new Queue(queueName, { connection }),
+      ]),
     );
+  }
+
+  // determine which main queue a job type belongs to
+
+  private getQueueName(jobType: string): string | undefined {
+    return Object.entries(QUEUE_MAP).find(([_, types]) =>
+      types.includes(jobType),
+    )?.[0];
   }
   // generic enque method
   async enqueue(payload: JobQueuePayload) {
-    const queue = this.queues.get(payload.jobType);
+    const queueName = this.getQueueName(payload.jobType);
 
-    if (!queue) {
-      throw new Error(`Queue for job type "${payload.jobType}" not found`);
-    }
+    if (!queueName)
+      throw new Error(`no queue found for this jobtype "${payload.jobType}"`);
+    const queue = this.queues.get(queueName);
 
-    const priorityRank: Record<string, number> = {
-      HIGH: 1,
-      MEDIUM: 2,
-      LOW: 10,
-      NONE: 20,
-    };
-
+    if (!queue)
+      throw new Error(`no queue found for this jobtype "${payload.jobType}"`);
     const options: JobsOptions = {
       attempts: payload.retries,
       backoff: {
         type: "exponential",
         delay: 2000,
       },
-      priority: priorityRank[payload.priorityLevel ?? "NONE"],
+      priority: this.priorityMap[payload.priorityLevel ?? "NONE"],
       // timeout: this.DEFAULT_TIMEOUT,
       removeOnComplete: false,
       removeOnFail: false,
@@ -62,7 +72,7 @@ export class QueueService {
       options.repeat = {
         pattern: payload.cron,
         jobId: payload.recurringJobId,
-      };
+      } as RepeatOptions;
     } else {
       if (payload.delayMs && payload.delayMs > 0) {
         options.delay = payload.delayMs;
@@ -70,6 +80,7 @@ export class QueueService {
       options.jobId = payload.idempotencyKey ?? payload.jobId;
     }
 
+    this.logger.log(`Enqueuing "${payload.jobType}" in "${queueName}" queue`);
     return queue.add(payload.jobType, payload, options);
   }
   /** List all recurring jobs in a queue */
@@ -85,7 +96,10 @@ export class QueueService {
 
   /** Remove a recurring job by its cron pattern and optional jobId */
   async stopRecurringJob(jobType: string, cronPattern: string, jobId?: string) {
-    const queue = this.queues.get(jobType);
+    const queueName = this.getQueueName(jobType);
+    if (!queueName) throw new Error(`No queue found for job type "${jobType}"`);
+
+    const queue = this.queues.get(queueName);
     if (!queue) throw new Error(`Queue for job type "${jobType}" not found`);
 
     const repeatables = await queue.getRepeatableJobs(0, 100, true);

@@ -6,3 +6,5 @@ coverage
 *.js
 *.d.ts
 oauth.strategy.ts
+jwt.payload.interface.ts
+cross_tenant
