@@ -1,30 +1,54 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
-import {Tenant} from './tenant.entity';
-import {Job} from './job.entity'
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+} from "typeorm";
+import { Tenant } from "./tenant.entity";
+import { Job } from "./job.entity";
 
-@Entity('users')
-    export class User {
-        @PrimaryGeneratedColumn('uuid')
-        id: string;
+export enum UserRole {
+  SUPER_ADMIN = "super_admin",
+  ADMIN = "admin",
+  USER = "user",
+}
+@Entity("users")
+export class User {
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
 
-        @Column({length: 255})
-        name: string
+  @Column({ length: 255 })
+  name: string;
 
-        @Column({length: 255, unique: true})
-        email: string;
+  @Column({ length: 255, unique: true })
+  email: string;
 
-        @Column({default: true})
-        isActive: boolean
+  // bcrypt hashed - never return this in the response
+  @Column({ length: 255 })
+  password: string;
 
-        @CreateDateColumn()
-        createdAt: Date;
+  @Column({
+    type: "enum",
+    enum: UserRole,
+    default: UserRole.USER,
+  })
+  role: UserRole;
 
-        @UpdateDateColumn()
-        updatedAt: Date;
+  @Column({ default: true })
+  isActive: boolean;
 
-        @ManyToOne(()=> Tenant, tenant => tenant.users)
-        tenant: Tenant
+  @CreateDateColumn()
+  createdAt: Date;
 
-        @OneToMany(()=> Job, job => job.user)
-        jobs: Job[]
-    }
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @ManyToOne(() => Tenant, (tenant) => tenant.users)
+  tenant: Tenant;
+
+  @OneToMany(() => Job, (job) => job.user)
+  jobs: Job[];
+}

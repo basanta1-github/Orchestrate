@@ -11,7 +11,9 @@ export * from "./jobs";
 // queue module export
 export * from "./queue/queue.module";
 
-export * from "./demo-user";
+export * from "./auth/demo-user";
 
 export * from "./chain/chain.service";
 export * from "./chain/chain.controller";
+
+export * from "./auth";

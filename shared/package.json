@@ -20,6 +20,8 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@nestjs/passport": "^11.0.5",
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.0.8",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",
@@ -39,6 +41,7 @@
     "typeorm": "^0.3.28"
   },
   "dependencies": {
+    "@nestjs/jwt": "^11.0.2",
     "pg": "^8.18.0"
   }
 }

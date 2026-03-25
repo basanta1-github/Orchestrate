@@ -5,4 +5,4 @@
 coverage
 *.js
 *.d.ts
-auth
+oauth.strategy.ts

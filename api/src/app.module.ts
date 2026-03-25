@@ -1,7 +1,12 @@
 import { Module, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { JobsModule, DatabaseModule } from '@jobque/shared';
+import {
+  JobsModule,
+  DatabaseModule,
+  AuthModule,
+  JwtAuthGuard,
+} from '@jobque/shared';
 import { WorkerModule } from '@jobque/workers';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -29,8 +34,9 @@ import { DataSource } from 'typeorm';
     DatabaseModule,
     JobsModule,
     WorkerModule,
+    AuthModule,
   ],
-  providers: [AppService],
+  providers: [AppService, JwtAuthGuard],
   controllers: [AppController],
 })
 // export class AppModule {}

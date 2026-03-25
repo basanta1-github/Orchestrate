@@ -1,5 +1,6 @@
 import { Controller, Post, Logger, Body } from "@nestjs/common";
 import { ChainService } from "./chain.service";
+import { AuthUser } from "../auth/auth.user.decorator";
 
 @Controller("jobs")
 export class ChainController {
@@ -7,7 +8,7 @@ export class ChainController {
   constructor(private readonly chainService: ChainService) {}
   // chain controller
   @Post("workflow")
-  async createWorkflow(@Body() dto: any) {
-    return this.chainService.createWorkFlow(dto);
+  async createWorkflow(@Body() dto: any, @AuthUser() user: any) {
+    return this.chainService.createWorkFlow(dto, user.id, user.tenantId);
   }
 }

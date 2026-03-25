@@ -7,7 +7,7 @@ import { Job } from "../database/entities/job.entity";
 import { JobStatus } from "../jobs";
 import { Body, BadRequestException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { DEMO_USER } from "../demo-user";
+// import { DEMO_USER } from "../auth/demo-user";
 
 @Injectable()
 export class ChainService {
@@ -31,7 +31,7 @@ export class ChainService {
     private readonly jobRepo: Repository<Job>,
   ) {}
 
-  async createWorkFlow(@Body() dto: any) {
+  async createWorkFlow(@Body() dto: any, userId: string, tenantId: string) {
     if (!dto.jobs || !Array.isArray(dto.jobs) || dto.jobs.length === 0) {
       throw new Error("Invalid jobs array");
     }
@@ -78,7 +78,7 @@ export class ChainService {
         "Invalid workflow: circular dependency detected",
       );
     }
-    const { id: userId, tenantId } = DEMO_USER;
+    // const { id: userId, tenantId } = DEMO_USER;
     const workFlowId = randomUUID();
     const jobMap: Record<string, Job> = {};
     const depRepo = this.dataSource.getRepository(JobDependency);
