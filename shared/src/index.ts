@@ -17,3 +17,5 @@ export * from "./chain/chain.service";
 export * from "./chain/chain.controller";
 
 export * from "./auth";
+
+export * from "./rbac/roleguard";

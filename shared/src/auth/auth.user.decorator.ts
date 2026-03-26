@@ -8,9 +8,9 @@ export const AuthUser = createParamDecorator(
     if (!user) return null;
 
     //map jwt payload to legacy "id" field
-    // const mappedUser = { ...user, id: user.userId };
-    // return data ? mappedUser[data] : mappedUser;
+    const mappedUser = { ...user, userId: user.id, tenantId: user.tenant.id };
+    return data ? mappedUser[data] : mappedUser;
 
-    return data ? user[data] : user;
+    // return data ? user[data] : user;
   },
 );

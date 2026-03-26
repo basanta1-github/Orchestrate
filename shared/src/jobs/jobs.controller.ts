@@ -16,6 +16,7 @@ import { DEMO_USER } from "../auth/demo-user";
 import { QueueService } from "../queue/queue.service";
 import { AuthUser } from "../auth/auth.user.decorator";
 import { UserRole } from "../database";
+import { Roles } from "../rbac/roles.decorer";
 // import { TenantGuard } from "../cross_tenant/tenant_guard";
 // import { TenantResource } from "../cross_tenant/tenant.decorator";
 // import { JwtTenant } from "../cross_tenant/tenant.decorator";
@@ -30,6 +31,7 @@ export class JobsController {
 
   // create job
   @Post()
+  @Roles("admin")
   async createJob(@Body() dto: CreateJobDto, @AuthUser() user: any) {
     // async createJob(@Body() dto: CreateJobDto, @Req() req){
     //     const userId = req.user.id;

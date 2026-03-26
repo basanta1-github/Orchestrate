@@ -3,14 +3,14 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './errordebugger';
 import 'reflect-metadata';
-import { JwtAuthGuard } from '@jobque/shared';
+import { JwtAuthGuard, RoleGuard } from '@jobque/shared';
 async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule, {
       logger: ['error', 'warn', 'log', 'debug', 'verbose'], // verbose logs
     });
 
-    app.useGlobalGuards(app.get(JwtAuthGuard));
+    app.useGlobalGuards(app.get(JwtAuthGuard), app.get(RoleGuard));
 
     // global validation
     app.useGlobalPipes(

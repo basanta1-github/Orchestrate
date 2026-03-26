@@ -101,8 +101,9 @@ export class JobsService {
       .leftJoinAndSelect("job.attempts", "attempts")
       .leftJoinAndSelect("job.user", "user")
       .leftJoinAndSelect("job.tenant", "tenant")
+      // NO USER ID FIILTER HERE ONLY USE IF YOU WANT TO BLOCK JOB ACCESS FOR ANOTHER USER
+      // .andWhere("user.id = :userId", { userId })
       .where("job.id = :jobId", { jobId })
-      .andWhere("user.id = :userId", { userId })
       .andWhere("tenant.id = :tenantId", { tenantId })
       .orderBy("attempts.attemptNumber", "ASC") // important: order attempts
       .getOne();
@@ -131,13 +132,8 @@ export class JobsService {
       .leftJoinAndSelect("job.attempts", "attempts")
       .leftJoin("job.user", "user")
       .leftJoin("job.tenant", "tenant")
-      .where("user.id = :userId", { userId })
+      // .where("user.id = :userId", { userId })
       .andWhere("tenant.id = :tenantId", { tenantId });
-    // const query = this.jobRepo
-    //   .createQueryBuilder("job")
-    //   .where("job.userId = :userId", { userId })
-    //   .andWhere("job.tenantId = :tenantId", { tenantId });
-
     if (filters.status) {
       query.andWhere("job.status = :status", {
         status: filters.status,

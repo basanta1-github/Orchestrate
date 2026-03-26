@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  ForbiddenException,
   Inject,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -92,6 +93,33 @@ export class AuthService {
     if (!isMatch) throw new UnauthorizedException("invalid credentals");
 
     return this.issueToken(user);
+  }
+
+  // create user by admin
+  async createUserByAdmin(
+    dto: { name: string; email: string; password: string; role: UserRole },
+    admin: User,
+  ) {
+    if (admin.role !== UserRole.ADMIN) {
+      throw new ForbiddenException("Only admin can create users");
+    }
+
+    const existingUser = await this.userRepo.findOne({
+      where: { email: dto.email },
+    });
+    if (existingUser) throw new ConflictException("Email already in use");
+
+    // const hash = await bcrypt.hash(dto.password, 10);
+
+    const newUser = this.userRepo.create({
+      name: dto.name,
+      email: dto.email,
+      password: dto.password,
+      role: dto.role,
+      tenant: { id: admin.tenant.id },
+    });
+
+    return this.userRepo.save(newUser);
   }
 
   //   called from googlestrategy after profile is validated // oauth only for company admins

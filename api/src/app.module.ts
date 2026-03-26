@@ -6,6 +6,7 @@ import {
   DatabaseModule,
   AuthModule,
   JwtAuthGuard,
+  RoleGuard,
 } from '@jobque/shared';
 import { WorkerModule } from '@jobque/workers';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -36,7 +37,7 @@ import { DataSource } from 'typeorm';
     WorkerModule,
     AuthModule,
   ],
-  providers: [AppService, JwtAuthGuard],
+  providers: [AppService, JwtAuthGuard, RoleGuard],
   controllers: [AppController],
 })
 // export class AppModule {}
