@@ -16,6 +16,6 @@ export class ChainController {
   @Roles("admin")
   // @TenantResource("tenantId") // look for tenantid in body or params
   async createWorkflow(@Body() dto: any, @AuthUser() user: any) {
-    return this.chainService.createWorkFlow(dto, user.userId, user.tenantId);
+    return this.chainService.createWorkFlow(dto, user.id, user.tenant.id);
   }
 }

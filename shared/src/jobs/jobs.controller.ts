@@ -40,18 +40,21 @@ export class JobsController {
     //     return this.jobsService.createAndEnqueue(dto, userId, tenantId)
 
     // Use fake user and tenant IDs for now
-    const { userId, tenantId } = user;
+    // const { userId, tenantId } = user;
     const job = await this.jobsService.createAndEnqueue(
       { ...dto, priorityLevel: dto.priorityLevel ?? "NONE" },
-      userId,
-      tenantId,
+      user.id,
+      user.tenant.id,
     );
     return { success: true, job };
   }
   @Post("schedule")
   async scheduleJob(@Body() dto: CreateJobDto, @AuthUser() user: any) {
-    const { userId, tenantId } = user;
-    const job = await this.jobsService.createAndEnqueue(dto, userId, tenantId);
+    const job = await this.jobsService.createAndEnqueue(
+      dto,
+      user.id,
+      user.tenant.id,
+    );
 
     return job;
   }
@@ -91,7 +94,12 @@ export class JobsController {
       return { message: "jobType and cronPattern are required" };
     }
 
-    return this.queueService.stopRecurringJob(jobType, cronPattern, jobId);
+    return this.queueService.stopRecurringJob(
+      jobType,
+      cronPattern,
+      jobId,
+      user.tenant.id,
+    );
   }
 
   // fetch single job by ID
@@ -102,10 +110,9 @@ export class JobsController {
     @AuthUser() user: any,
     //  @JwtTenant() tenant:string
   ) {
-    const { userId, tenantId } = user;
     // service should verify this job belongs to user.tenantId
     // if not, throw NotFoundException (don't reveal the job exists)
-    const job = await this.jobsService.getJobById(id, userId, tenantId);
+    const job = await this.jobsService.getJobById(id, user.id, user.tenant.id);
     return job;
   }
 
@@ -113,8 +120,7 @@ export class JobsController {
   @Get()
   // @TenantResource("tenantId")
   async listJobs(@Query() query: any, @AuthUser() user: any) {
-    const { userId, tenantId } = user;
-    const job = await this.jobsService.listJobs(userId, tenantId, query);
+    const job = await this.jobsService.listJobs(user.id, user.tenant.id, query);
     return job;
   }
 }

@@ -10,7 +10,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
-import { ChainService } from "@jobque/shared";
+import { ChainService, TenantCapService } from "@jobque/shared";
 
 @Injectable()
 export class MediaProcessor extends BaseProcessor {
@@ -30,11 +30,14 @@ export class MediaProcessor extends BaseProcessor {
     @InjectDataSource()
     dataSource: DataSource,
     chainService: ChainService,
+    tenantCapService: TenantCapService,
   ) {
-    super(dataSource, chainService);
+    super(dataSource, chainService, tenantCapService);
   }
 
   protected async process(job: Bulljob): Promise<void> {
+    // 👇 ADD THESE 2 LINES HERE (line 29)
+    console.log(`🔥 START ${job.data.jobId} at ${new Date().toISOString()}`);
     console.log(
       `[MediaProcessor] processing media job`,
       job.data,
@@ -106,6 +109,8 @@ export class MediaProcessor extends BaseProcessor {
     console.log(
       `[MediaProcessor] job ${job.data.jobId} processed successfully`,
     );
+    // 👇 ADD THIS at END (before return)
+    console.log(`✅ FINISH ${job.data.jobId} at ${new Date().toISOString()}`);
   }
   private async processVideo(fileUrl: string, format: string): Promise<string> {
     const outputFileName = `${uuidv4()}.${format}`;

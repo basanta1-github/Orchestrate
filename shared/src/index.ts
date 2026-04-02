@@ -19,3 +19,6 @@ export * from "./chain/chain.controller";
 export * from "./auth";
 
 export * from "./rbac/roleguard";
+export * from "./queue/job-queue.payload";
+
+export * from "./scaling";

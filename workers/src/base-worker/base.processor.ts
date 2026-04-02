@@ -11,6 +11,7 @@ import {
 } from "@jobque/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
+import { TenantCapService } from "@jobque/shared";
 
 @Injectable()
 export abstract class BaseProcessor {
@@ -20,9 +21,12 @@ export abstract class BaseProcessor {
     @InjectDataSource()
     protected readonly dataSource: DataSource,
     protected readonly chainService: ChainService,
+    // inject so we can release the tenant slot when a job finishes
+    protected readonly tenantCapService: TenantCapService,
   ) {}
 
   async execute(job: BullJob): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
     const jobRepo: Repository<Job> = this.dataSource.getRepository(Job);
     const JobAttemptRepo: Repository<JobAttempt> =
       this.dataSource.getRepository(JobAttempt);
@@ -34,9 +38,12 @@ export abstract class BaseProcessor {
       where: { id: job.data.jobId },
     });
     const isRecurring = !!job.opts.repeat;
+    const isWorkflowJob = !!existingJob?.workFlowId;
 
     if (existingJob?.status === JobStatus.COMPLETED && !isRecurring) {
       this.logger.warn(`Job ${job.data.jobId} already completed. Skipping.`);
+      // still release the slot even if we skipped - it was counted on enqueue
+      await this.safeRelease(job.data.tenantId);
       return;
     }
 
@@ -74,10 +81,11 @@ export abstract class BaseProcessor {
         await recurringJobrepo.save(recurringJob);
       }
     }
+    // replace the multiline processing log with this
     this.logger.log(
-      !isRecurring
-        ? `Processing DBJob=${job.data.jobId} BullJob=${job.id} Seq=${sequenceNumber} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`
-        : `Processing Recurring DBJob=${job.data.jobId} BullJob=${job.id} Run=${sequenceNumber} Queue=${job.queueName}`,
+      isRecurring
+        ? `Processing recurring job ${job.data.jobId} run=${sequenceNumber} queue=${job.queueName}`
+        : `Processing job ${job.data.jobId} queue=${job.queueName} priority=${job.data.priorityLevel}`,
     );
 
     const attempt = JobAttemptRepo.create({
@@ -124,29 +132,31 @@ export abstract class BaseProcessor {
         },
       );
 
-      // child jobs
-      try {
-        await this.chainService.onJobCompleted(job.data.jobId);
-        this.logger.log(`Scheduled next workflow step after ${job.data.jobId}`);
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        this.logger.error(
-          `Failed workflow scheduling after ${job.data.jobId}`,
-          err.stack,
-        );
+      if (isWorkflowJob) {
+        // child jobs
+        try {
+          await this.chainService.onJobCompleted(job.data.jobId);
+          this.logger.log(
+            `Scheduled next workflow step after ${job.data.jobId}`,
+          );
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.logger.error(
+            `Failed workflow scheduling after ${job.data.jobId}`,
+            err.stack,
+          );
+        }
       }
 
-      await logRepo.save({
-        job: { id: job.data.jobId },
-        message: "Job completed successfully",
-        data: { attemptNumber: attempt.attemptNumber },
-      });
-
       this.logger.log(
-        !isRecurring
-          ? `Job ${sequenceNumber} completed successfully`
-          : `Recurring Job ${job.data.jobId} Run ${sequenceNumber} completed successfully`,
+        isWorkflowJob
+          ? `Workflow job ${job.data.jobId} sequence ${sequenceNumber} completed (workflow=${existingJob?.workFlowId})`
+          : isRecurring
+            ? `Recurring job ${job.data.jobId} run ${sequenceNumber} completed`
+            : `Job ${job.data.jobId} sequence ${sequenceNumber} completed`,
       );
+      // release tenant slot on success
+      await this.safeRelease(job.data.tenantId);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       const now = new Date();
@@ -175,6 +185,8 @@ export abstract class BaseProcessor {
           { id: job.data.jobId },
           { status: JobStatus.FAILED, completedAt: now },
         );
+        // release tenant slot on finalfaliure
+        await this.safeRelease(job.data.tenantId);
       }
 
       //  Handle failure strategy
@@ -182,11 +194,30 @@ export abstract class BaseProcessor {
       // - Skip triggering dependent jobs (STRICT failure strategy)
       // - Or mark dependent jobs as FAILED/LENIENT
       // Example:
+
+      // If NOT the final attempt we do NOT release — the job is still
+      // in-flight (BullMQ will retry it). The slot stays occupied.
       await this.chainService.handleParentFailure(job.data.jobId);
 
       this.logger.error(`Job ${job.id} failed`, err.stack);
 
       throw error; // rethrow -> BullMQ retry/backoff
+    }
+    this.logger.log(`Job ${job.data.jobId} processed after 10s delay`);
+  }
+  /**
+   * Release the tenant slot. Wrapped in try/catch so a Redis hiccup never
+   * breaks job execution — worst case the counter drifts slightly and
+   * self-corrects on the next job.
+   */
+  private async safeRelease(tenantId: string): Promise<void> {
+    try {
+      await this.tenantCapService.release(tenantId);
+    } catch (err) {
+      this.logger.error(
+        `Failed to release tenant slot for ${tenantId}`,
+        err instanceof Error ? err.stack : String(err),
+      );
     }
   }
 

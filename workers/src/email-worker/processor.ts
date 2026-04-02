@@ -9,6 +9,7 @@ import {
   Notification,
   NotificationChanel,
   NotificationStatus,
+  TenantCapService,
 } from "@jobque/shared";
 import { v4 as uuidv4 } from "uuid";
 import validator from "validator";
@@ -24,8 +25,9 @@ export class EmailProcessor extends BaseProcessor {
     @InjectDataSource()
     dataSource: DataSource,
     chainService: ChainService,
+    tenantCapService: TenantCapService,
   ) {
-    super(dataSource, chainService);
+    super(dataSource, chainService, tenantCapService);
   }
   protected async process(job: BullJob): Promise<void> {
     const { metadata } = job.data;

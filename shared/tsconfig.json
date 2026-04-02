@@ -14,6 +14,6 @@
     "experimentalDecorators": true,  // NestJS decorators
     "emitDecoratorMetadata": true    // NestJS metadata
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/scaling/tenant-cap.service.ts"],
   "exclude": ["node_modules", "dist"]
 }

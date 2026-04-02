@@ -7,25 +7,45 @@ import { Job } from "../database/entities/job.entity";
 import { JobStatus } from "../jobs";
 import { Body, BadRequestException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { TenantCapService } from "../scaling";
 // import { DEMO_USER } from "../auth/demo-user";
 
+/**
+ * chain service
+ * manages multi seep workflow jobs (job a -> job b -> job c)
+ *
+ * schedulenextJobs calls tenantCapService.submitJob()
+ * instead of queueservice.enqueue() directly to make sure workflow jobs
+ * pass thorugh tenant cap and staging area like regular single jobs without this
+ * workflow can flood queue ignoring per tenant cap
+ */
 @Injectable()
 export class ChainService {
   private readonly logger = new Logger(ChainService.name);
-
+  // job priority -> bullmq priority number lower runs first in bullmq
+  // these are used as tiebreakers within the same branch banned
+  private readonly jobPriorityValue: Record<string, number> = {
+    HIGH: 1,
+    // MID: 2,
+    MEDIUM: 2,
+    LOW: 3,
+    NONE: 4,
+  };
+  // USED FOR SORTING ROOT JOBS BY THEIR DECLARED PRIORITY
   private readonly priorityRank: Record<
     "HIGH" | "MEDIUM" | "LOW" | "NONE",
     number
   > = {
     HIGH: 1,
     MEDIUM: 2,
-    LOW: 10,
-    NONE: 20,
+    LOW: 3,
+    NONE: 4,
   };
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
-    private readonly queueService: QueueService,
+    // private readonly queueService: QueueService,
+    private readonly tenantCapService: TenantCapService,
 
     @InjectRepository(Job)
     private readonly jobRepo: Repository<Job>,
@@ -34,6 +54,17 @@ export class ChainService {
   async createWorkFlow(@Body() dto: any, userId: string, tenantId: string) {
     if (!dto.jobs || !Array.isArray(dto.jobs) || dto.jobs.length === 0) {
       throw new Error("Invalid jobs array");
+    }
+
+    const keys = dto.jobs.map((j: any) => j.key);
+    const uniqueKeys = new Set(keys);
+    if (uniqueKeys.size !== keys.length) {
+      const duplicates = keys.filter(
+        (key: string, index: number) => keys.indexOf(key) !== index,
+      );
+      throw new BadRequestException(
+        `Invalid workflow: duplicate jobs keys found ${[...new Set(duplicates)].join(", ")}`,
+      );
     }
 
     // ensure at least 1 root job exists
@@ -134,7 +165,7 @@ export class ChainService {
       }
     }
 
-    await this.scheduleNextJob(workFlowId);
+    await this.scheduleNextJob(workFlowId, tenantId);
 
     // const savedJobs =
     // await this.jobRepo.find({
@@ -169,8 +200,7 @@ export class ChainService {
   }
 
   async onJobCompleted(jobId: string) {
-    const jobRepo = this.dataSource.getRepository(Job);
-    const completedJob = await jobRepo.findOne({
+    const completedJob = await this.jobRepo.findOne({
       where: { id: jobId },
       relations: ["tenant", "user"],
     });
@@ -178,7 +208,7 @@ export class ChainService {
     if (!completedJob || !completedJob.workFlowId) return;
 
     await this.unlockChildren(jobId);
-    await this.scheduleNextJob(completedJob.workFlowId);
+    await this.scheduleNextJob(completedJob.workFlowId, completedJob.tenant.id);
   }
 
   async unlockChildren(parentJobId: string) {
@@ -221,11 +251,45 @@ export class ChainService {
       }
     }
   }
+  /**
+   * scheduleNextJob now takes tenantid so it can routethrough tenant cap service
+   * this ensure workflow jobsrespect the pertenant job just like regular jobs
+   *
+   * We do NOT block any job from entering the BullMQ queue.
+  Tenant cap, band promoter, autoscaler all work normally.
 
-  async scheduleNextJob(workFlowId: string) {
-    const jobRepo = this.dataSource.getRepository(Job);
+   Instead we control WHICH JOB RUNS FIRST inside BullMQ by assigning
+   a carefully calculated BullMQ priority number to each job when we enqueue it.
 
-    const queuedOrProcessingCount = await jobRepo.count({
+   BullMQ runs lower priority NUMBER first (priority=1 before priority=10).
+
+   The formula:
+     bullPriority = (rootRank * 100) + jobOwnPriorityValue
+
+   rootRank = position of this job's root in the sorted root list
+     (highest-priority root = rank 1, next = rank 2, etc.)
+
+   jobOwnPriorityValue = HIGH=1, MID=2, LOW=3, NONE=4
+
+   Example from the scenario:
+     B is root rank 1 (HIGH root).
+     D is B's child with HIGH own priority.
+     bullPriority(D) = (1 * 100) + 1 = 101
+
+     A is root rank 2 (MID root).
+     G is A's child with HIGH own priority.
+     bullPriority(G) = (2 * 100) + 1 = 201
+
+     So D (101) always runs before G (201) even though both have HIGH own priority.
+     BullMQ handles this automatically — no blocking needed.
+
+   Independent jobs (no workFlowId):
+     Use their own priority directly — HIGH=1, MID=2, LOW=10, NONE=20.
+     They go through TenantCapService exactly as before.
+   */
+
+  async scheduleNextJob(workFlowId: string, tenantId: string) {
+    const queuedOrProcessingCount = await this.jobRepo.count({
       where: [
         { workFlowId, status: JobStatus.QUEUED },
         { workFlowId, status: JobStatus.PROCESSING },
@@ -254,9 +318,10 @@ export class ChainService {
       `Candidate selected: ${candidate.id} ${candidate.priorityLevel} ${candidate.status}`,
     );
 
-    await jobRepo.update(candidate.id, { status: JobStatus.QUEUED });
+    await this.jobRepo.update(candidate.id, { status: JobStatus.QUEUED });
+    // roting through tenantcapservice
 
-    await this.queueService.enqueue({
+    await this.tenantCapService.submitJob({
       jobId: candidate.id,
       jobType: candidate.type,
       tenantId: candidate.tenant?.id,
@@ -270,6 +335,129 @@ export class ChainService {
       `Scheduled next workflow job ${candidate.id} (${candidate.priorityLevel}) for workflow ${workFlowId}`,
     );
   }
+  // async scheduleNextJob(workFlowId: string, tenantId: string): Promise<void> {
+  //   const deprepo = this.dataSource.getRepository(JobDependency);
+
+  //   // load the entire workflow
+  //   const allJobs = await this.jobRepo.find({
+  //     where: { workFlowId },
+  //     relations: ["tenant", "user"],
+  //   });
+
+  //   // find root jobs (jobs that nobody lists as a child)
+  //   const allIds = allJobs.map((j) => j.id);
+  //   const childIds = new Set(
+  //     (await deprepo.find({ where: { parentJobId: In(allIds) } })).map(
+  //       (d) => d.childJobId,
+  //     ),
+  //   );
+  //   const rootJobs = allJobs
+  //     .filter((j) => !childIds.has(j.id))
+  //     .sort((a, b) => {
+  //       const p =
+  //         (this.priorityRank[a.priorityLevel] ?? 4) -
+  //         (this.priorityRank[b.priorityLevel] ?? 4);
+  //       return p !== 0 ? p : a.createdAt.getTime() - b.createdAt.getTime();
+  //     });
+
+  //   // for each root compute its rank (1-based highest priority = 1)
+  //   const rootRankMap = new Map<string, number>();
+  //   rootJobs.forEach((root, idx) => rootRankMap.set(root.id, idx + 1));
+
+  //   // build a map of jobId => rootId so every job know its branch
+  //   const jobRootMap = await this.buildJobRootMap(allJobs, deprepo);
+
+  //   // find all ready jobs
+  //   const readyJobs = allJobs.filter((j) => j.status === JobStatus.READY);
+  //   if (readyJobs.length === 0) {
+  //     this.logger.debug(`Workflow ${workFlowId} — no READY jobs`);
+  //     return;
+  //   }
+  //   this.logger.log(
+  //     `Workflow ${workFlowId} — scheduling ${readyJobs.length} READY job(s)`,
+  //   );
+  //   // enqueue each ready jobs with its calculated bullMQ priority
+  //   for (const job of readyJobs) {
+  //     // atomatic claim: only proceed if we're the one that flipped it to QUEUED
+  //     const result = await this.jobRepo
+  //       .createQueryBuilder()
+  //       .update(Job)
+  //       .set({ status: JobStatus.QUEUED })
+  //       .where("id = :id", { id: job.id })
+  //       .andWhere("status = :status", { status: JobStatus.READY })
+  //       .execute();
+  //     if (result.affected === 0) {
+  //       // another cocurrent call already claimed this job
+  //       continue;
+  //     }
+
+  //     // calculate BullMQ priority number
+  //     const rootId = jobRootMap.get(job.id);
+  //     const rootRank = rootId ? (rootRankMap.get(rootId) ?? 99) : 99;
+  //     const ownPriority = this.jobPriorityValue[job.priorityLevel] ?? 4;
+
+  //     // rootrank * 100 ensures entire B branch (rank = 1 , scores 101-104)
+  //     // always neats entire A branch ( rank = 2, scores 201-204) in BullMQ
+  //     // own priority  is the tieBreaker within the same branch
+  //     const bullPriority = rootRank * 100 * ownPriority;
+  //     try {
+  //       await this.tenantCapService.submitJob({
+  //         jobId: job.id,
+  //         jobType: job.type,
+  //         tenantId: job.tenant?.id ?? tenantId,
+  //         priorityLevel: job.priorityLevel ?? "NONE",
+  //         retries: job.retries,
+  //         metadata: job.metadata,
+  //         // Pass bullPriority override so QueueService uses this number
+  //         // instead of calculating from priorityLevel alone
+  //         bullPriorityOverride: bullPriority,
+  //       });
+
+  //       this.logger.log(
+  //         `Workflow ${workFlowId} — enqueued job ${job.id} ` +
+  //           `(${job.type} / own=${job.priorityLevel} / rootRank=${rootRank} / bullPriority=${bullPriority})`,
+  //       );
+  //     } catch (error) {
+  //       await this.jobRepo.update(job.id, { status: JobStatus.READY });
+  //       this.logger.error(
+  //         `Failed to enqueue job ${job.id}, reverted to READY`,
+  //         error instanceof Error ? error.message : String(error),
+  //       );
+  //     }
+  //   }
+  // }
+  // // build job root map
+  // // walks the dependency graph for every job to find its root ancestor
+  // // returns a Map <jobId, rootJobId>
+
+  // private async buildJobRootMap(
+  //   allJobs: Job[],
+  //   depRepo: Repository<JobDependency>,
+  // ): Promise<Map<string, string>> {
+  //   const allIds = allJobs.map((j) => j.id);
+
+  //   // load all dependencies
+  //   const allDeps = await depRepo.find({
+  //     where: { parentJobId: In(allIds) },
+  //   });
+
+  //   // build child -> parent map
+  //   const childToParent = new Map<string, string>();
+  //   for (const dep of allDeps) {
+  //     childToParent.set(dep.childJobId, dep.parentJobId);
+  //   }
+  //   // for each job walk up to root
+  //   const result = new Map<string, string>();
+  //   for (const job of allJobs) {
+  //     let current = job.id;
+  //     const visited = new Set<String>();
+  //     while (childToParent.has(current) && !visited.has(current)) {
+  //       visited.add(current);
+  //     }
+  //     result.set(job.id, current);
+  //   }
+  //   return result;
+  // }
 
   // picks next job to run across the whole workflow
   //  strategy: for each root job sorted by priority, do a depth-first walk of its subtree
@@ -395,9 +583,11 @@ export class ChainService {
 
   async handleParentFailure(parentJobId: string) {
     const depRepo = this.dataSource.getRepository(JobDependency);
-    const jobRepo = this.dataSource.getRepository(Job);
 
-    const parentJob = await jobRepo.findOne({ where: { id: parentJobId } });
+    const parentJob = await this.jobRepo.findOne({
+      where: { id: parentJobId },
+      relations: ["tenant"],
+    });
     if (!parentJob?.workFlowId) return;
 
     const deps = await depRepo.find({
@@ -406,15 +596,15 @@ export class ChainService {
     });
 
     for (const dep of deps) {
-      const child = await dep.childJob;
+      const child = dep.childJob;
 
       if (!child) continue;
 
-      const fullChild = await jobRepo.findOne({ where: { id: child.id } });
+      const fullChild = await this.jobRepo.findOne({ where: { id: child.id } });
       if (!fullChild) continue;
 
       if (fullChild.faliureStrategy === "STRICT") {
-        await jobRepo.update(fullChild.id, {
+        await this.jobRepo.update(fullChild.id, {
           status: JobStatus.SKIPPED,
         });
         Logger.warn(
@@ -422,6 +612,9 @@ export class ChainService {
         );
       }
     }
-    await this.scheduleNextJob(parentJob.workFlowId);
+    await this.scheduleNextJob(
+      parentJob.workFlowId,
+      parentJob.tenant?.id ?? "",
+    );
   }
 }

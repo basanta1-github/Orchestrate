@@ -4,11 +4,11 @@ import { Injectable, Logger } from "@nestjs/common";
 
 const QUEUE_MAP: Record<string, string[]> = {
   // ml: ["text_summarization", "classification", "ocr"],
-  media: ["video_transcode", "audio_transcode", "image_resize"],
-  etl: ["etl-jobs"],
-  ml: ["ml-jobs"],
-  email: ["email-jobs"],
-  report: ["report-jobs"],
+  "media-jobs": ["video_transcode", "audio_transcode", "image_resize"],
+  "etl-jobs": ["etl-jobs"],
+  "ml-jobs": ["ml-jobs"],
+  "email-jobs": ["email-jobs"],
+  "report-jobs": ["report-jobs"],
 };
 
 @Injectable()
@@ -36,7 +36,6 @@ export class QueueService {
   }
 
   // determine which main queue a job type belongs to
-
   private getQueueName(jobType: string): string | undefined {
     return Object.entries(QUEUE_MAP).find(([_, types]) =>
       types.includes(jobType),
@@ -45,20 +44,29 @@ export class QueueService {
   // generic enque method
   async enqueue(payload: JobQueuePayload) {
     const queueName = this.getQueueName(payload.jobType);
-
     if (!queueName)
       throw new Error(`no queue found for this jobtype "${payload.jobType}"`);
     const queue = this.queues.get(queueName);
 
     if (!queue)
       throw new Error(`no queue found for this jobtype "${payload.jobType}"`);
+
+    // priority resolution
+    // workflow jobs pass bullPriorityOverride (calculated from branch rank)
+    // normal jobs use the standard priorityMap
+
+    const priority =
+      payload.bullPriorityOverride !== undefined
+        ? payload.bullPriorityOverride
+        : (this.priorityMap[payload.priorityLevel ?? "NONE"] ?? 20);
+
     const options: JobsOptions = {
       attempts: payload.retries,
       backoff: {
         type: "exponential",
         delay: 2000,
       },
-      priority: this.priorityMap[payload.priorityLevel ?? "NONE"],
+      priority,
       // timeout: this.DEFAULT_TIMEOUT,
       removeOnComplete: false,
       removeOnFail: false,
@@ -66,7 +74,6 @@ export class QueueService {
       // but runtime will still enforce it if you want:
       // You can handle timeout in the processor instead
     };
-
     // recurring jobs and delayed jobs
     if (payload.cron) {
       options.repeat = {
@@ -77,10 +84,19 @@ export class QueueService {
       if (payload.delayMs && payload.delayMs > 0) {
         options.delay = payload.delayMs;
       }
-      options.jobId = payload.idempotencyKey ?? payload.jobId;
+      // only set jobId for explicit idempotency keys - not for every job,
+      // setting jobId = DB uuid on every jobs causes bullMQ to silently deduplicate
+      // retries and re-submissions
+
+      if (payload.idempotencyKey) {
+        options.jobId = payload.idempotencyKey ?? payload.jobId;
+      }
     }
 
-    this.logger.log(`Enqueuing "${payload.jobType}" in "${queueName}" queue`);
+    this.logger.log(
+      `Enqueuing "${payload.jobType}" → "${queueName}" ` +
+        `(priority=${priority}${payload.bullPriorityOverride !== undefined ? " [branch override]" : ""})`,
+    );
     return queue.add(payload.jobType, payload, options);
   }
   /** List all recurring jobs in a queue */
@@ -95,7 +111,12 @@ export class QueueService {
   }
 
   /** Remove a recurring job by its cron pattern and optional jobId */
-  async stopRecurringJob(jobType: string, cronPattern: string, jobId?: string) {
+  async stopRecurringJob(
+    jobType: string,
+    cronPattern: string,
+    jobId?: string,
+    tenantId?: string,
+  ) {
     const queueName = this.getQueueName(jobType);
     if (!queueName) throw new Error(`No queue found for job type "${jobType}"`);
 
@@ -105,7 +126,14 @@ export class QueueService {
     const repeatables = await queue.getRepeatableJobs(0, 100, true);
 
     // find the matching job
-    const jobToRemove = repeatables.find((r) => r.name === jobType);
+    const jobToRemove = repeatables.find((r) => {
+      return (
+        r.name === jobType &&
+        r.pattern === cronPattern &&
+        (!jobId || r.id === jobId) &&
+        (!tenantId || r.id?.includes(tenantId))
+      );
+    });
 
     if (!jobToRemove) {
       Logger.warn(
@@ -113,11 +141,14 @@ export class QueueService {
       );
       return { message: `Recurring job not found` };
     }
-
     // ⚡ remove by key (non-deprecated)
     await queue.removeRepeatableByKey(jobToRemove.key);
 
     Logger.log(`Recurring job stopped: ${jobType} / ${cronPattern}`);
     return { message: `Recurring job stopped: ${jobType} / ${cronPattern}` };
+  }
+  // expose the internal map so the module can share it with other services
+  getQueues(): Map<string, Queue> {
+    return this.queues;
   }
 }

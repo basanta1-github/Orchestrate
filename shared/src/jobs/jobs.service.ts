@@ -2,15 +2,16 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ForbiddenException,
+  // ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Job } from "../database/entities/job.entity";
-import { QueueService } from "../queue/queue.service";
+// import { QueueService } from "../queue/queue.service";
 import { CreateJobDto } from "./dto/create-job.dto";
 import { JobStatus } from "./jobs.constants";
 import { RecurringJob } from "../database/entities/recurring-jobs.entity";
+import { TenantCapService } from "../scaling/tenant-cap.service";
 
 @Injectable()
 export class JobsService {
@@ -20,7 +21,9 @@ export class JobsService {
     private readonly jobRepo: Repository<Job>,
     @InjectRepository(RecurringJob)
     readonly recurringJobRepo: Repository<RecurringJob>,
-    private readonly queueService: QueueService,
+    // private readonly queueService: QueueService,
+
+    private readonly tenantCapService: TenantCapService,
   ) {}
 
   async createAndEnqueue(dto: CreateJobDto, userId: string, tenantId: string) {
@@ -66,7 +69,25 @@ export class JobsService {
     this.logger.log(logMessage);
 
     try {
-      await this.queueService.enqueue({
+      // await this.queueService.enqueue({
+      //   jobId: savedJob.id,
+      //   recurringJobId,
+      //   jobType: savedJob.type,
+      //   tenantId: tenantId,
+      //   priorityLevel: savedJob.priorityLevel,
+      //   retries: savedJob.retries,
+      //   metadata: savedJob.metadata,
+      //   delayMs: savedJob.delayMs,
+      //   cron: savedJob.cron,
+      //   idempotencyKey: savedJob.idempotencyKey,
+      // ⚠ Only include jobId for normal/delayed jobs
+      // ...(savedJob.cron
+      //   ? {}
+      //   : { jobId: savedJob.idempotencyKey ?? savedJob.id }),
+      // });
+      // console.log(`Enqueued job ${savedJob.id} successfully.`);
+
+      const result = await this.tenantCapService.submitJob({
         jobId: savedJob.id,
         recurringJobId,
         jobType: savedJob.type,
@@ -77,12 +98,9 @@ export class JobsService {
         delayMs: savedJob.delayMs,
         cron: savedJob.cron,
         idempotencyKey: savedJob.idempotencyKey,
-        // ⚠ Only include jobId for normal/delayed jobs
-        // ...(savedJob.cron
-        //   ? {}
-        //   : { jobId: savedJob.idempotencyKey ?? savedJob.id }),
       });
-      console.log(`Enqueued job ${savedJob.id} successfully.`);
+      // result.status is "queued" or "staged" —  log or return it.
+      console.log(`Job ${savedJob.id} — ${result.status} (tenant=${tenantId})`);
     } catch (error) {
       this.logger.error(
         `Failed to enqueue job ${savedJob.id}`,

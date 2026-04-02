@@ -5,7 +5,13 @@ import { ETLService, ETLPayload } from "./service";
 import { randomUUID } from "crypto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
-import { ChainService, Job, JobStatus, QueueService } from "@jobque/shared";
+import {
+  ChainService,
+  Job,
+  JobStatus,
+  QueueService,
+  TenantCapService,
+} from "@jobque/shared";
 
 @Injectable()
 export class ETLProcessor extends BaseProcessor {
@@ -13,10 +19,11 @@ export class ETLProcessor extends BaseProcessor {
     @InjectDataSource()
     dataSource: DataSource,
     chainService: ChainService,
+    tenantCapService: TenantCapService,
     private readonly etlService: ETLService,
-    private readonly queueService: QueueService,
+    // private readonly queueService: QueueService,
   ) {
-    super(dataSource, chainService);
+    super(dataSource, chainService, tenantCapService);
 
     console.log("etlService constructor =", this.etlService.constructor.name);
     // Should print "ETLService", not "DataSource"
@@ -68,6 +75,8 @@ export class ETLProcessor extends BaseProcessor {
     } catch (error) {
       throw error;
     }
+
+    // schedule next etl jobs
     if (metadata.nextJob) {
       const newJobId = randomUUID();
       // create a job record
@@ -77,9 +86,11 @@ export class ETLProcessor extends BaseProcessor {
         status: JobStatus.QUEUED,
         tenantId: job.data.tenantId,
         metadata: metadata.nextJob,
+        priorityLevel: job.data.priorityLevel ?? "NONE",
+        retries: job.opts.attempts ?? 3,
       });
       // send job to queue
-      await this.queueService.enqueue({
+      await this.tenantCapService.submitJob({
         jobId: newJobId,
         jobType: "etl-jobs",
         metadata: metadata.nextJob,

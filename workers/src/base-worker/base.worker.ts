@@ -12,8 +12,8 @@ export abstract class BaseWorker {
 
   // redis client for rate limiting
   private redis = new Redis({
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
+    host: process.env.REDIS_HOST || "redis",
+    port: Number(process.env.REDIS_PORT || 6379),
   });
 
   // in-memory counter for jobs per minute
@@ -26,8 +26,8 @@ export abstract class BaseWorker {
 
   protected async startWorker(processor: BaseProcessor) {
     const connection = {
-      host: process.env.REDIS_HOST,
-      port: Number(process.env.REDIS_PORT),
+      host: process.env.REDIS_HOST || "redis",
+      port: Number(process.env.REDIS_PORT || 6379),
     };
 
     // queue (producer side)
@@ -55,6 +55,7 @@ export abstract class BaseWorker {
         // }
         // console.log("this.processor:", processor);
         // console.log("execute:", processor?.execute);
+        this.logger.log(`Worker received job ${job.id}`);
         return processor.execute(job);
       },
       {
@@ -70,16 +71,16 @@ export abstract class BaseWorker {
     );
 
     this.queueEvents = new QueueEvents(this.queueName, { connection });
-    this.worker.on("active", (job) =>
-      this.logger.log(
-        `ACTIVE BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
-      ),
-    );
-    this.worker.on("completed", (job) => {
-      this.logger.log(
-        `COMPLETED BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
-      );
-    });
+    // this.worker.on("active", (job) =>
+    //   this.logger.log(
+    //     `ACTIVE BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
+    //   ),
+    // );
+    // this.worker.on("completed", (job) => {
+    //   this.logger.log(
+    //     `COMPLETED BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
+    //   );
+    // });
 
     this.worker.on("failed", async (job, err) => {
       if (!job) return;
