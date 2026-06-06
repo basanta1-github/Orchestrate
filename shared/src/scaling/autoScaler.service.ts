@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Queue } from "bullmq";
 
+// import { QueueMetricsCollector, WorkerHealthCollector } from "../metrics";
+import { workerRegistryService } from "./workerRegistry.service";
+
 /**
  *
  * Autto scaler service
@@ -66,7 +69,7 @@ export class AutoScalerService implements OnModuleInit {
    * start at MIN_WORKERS; the WorkerRegistery own actual instances.
    */
 
-  private workerCounts: Map<string, number> = new Map();
+  // private workerCounts: Map<string, number> = new Map();
 
   // timestamp of the last scale event per queue (for cooldown)
   private lastScaleAt: Map<string, number> = new Map();
@@ -77,28 +80,58 @@ export class AutoScalerService implements OnModuleInit {
    * Injected by the module- provides spawnWorker / terminateWorker.
    * we accept it as a plan bject so there is no circular dep
    */
+  constructor() {
+    // private readonly queueMetrics: QueueMetricsCollector,
+    // private readonly workerHealth: WorkerHealthCollector,
+  }
 
-  private workerRegistery: {
-    spawnWorker: (queueName: string) => Promise<void>;
-    terminateWorker: (queueName: string) => Promise<void>;
-    getWorkerCount: (queueName: string) => number;
+  private metricsCallbacks: {
+    recordScaleUp: (queue: string) => void;
+    recordScaleDown: (queue: string) => void;
+    onWorkerSpawned: (queue: string) => void;
+    onWorkerTerminated: (queue: string) => void;
   } | null = null;
 
-  // detup
-  setWorkerregistery(registry: {
-    spawnWorker: (queueName: string) => Promise<void>;
-    terminateWorker: (queueName: string) => Promise<void>;
-    getWorkerCount: (queueName: string) => number;
+  // setter called by QueueModule.onModuleInit() after metricsmodule is ready
+  setMetricsCallbacks(callbacks: {
+    recordScaleUp: (queue: string) => void;
+    recordScaleDown: (queue: string) => void;
+    onWorkerSpawned: (queue: string) => void;
+    onWorkerTerminated: (queue: string) => void;
   }): void {
+    this.metricsCallbacks = callbacks;
+  }
+
+  // private workerRegistery: {
+  //   spawnWorker: (queueName: string) => Promise<void>;
+  //   terminateWorker: (queueName: string) => Promise<void>;
+  //   getWorkerCount: (queueName: string) => number;
+  // } | null = null;
+
+  private workerRegistery: workerRegistryService | null = null;
+
+  // setup
+  // setWorkerregistery(registry: {
+  //   spawnWorker: (queueName: string) => Promise<void>;
+  //   terminateWorker: (queueName: string) => Promise<void>;
+  //   getWorkerCount: (queueName: string) => number;
+  // }): void {
+  //   this.workerRegistery = registry;
+  // }
+  setWorkerRegistery(registry: workerRegistryService): void {
     this.workerRegistery = registry;
   }
   registerQueues(queues: Map<string, Queue>): void {
     this.queues = queues;
-    for (const name of queues.keys()) {
-      if (!this.workerCounts.has(name)) {
-        this.workerCounts.set(name, this.MIN_WORKERS);
-      }
-    }
+    // for (const name of queues.keys()) {
+    //   if (!this.workerCounts.has(name)) {
+    //     const existingCount = this.workerRegistery?.getWorkerCount(name) ?? 0;
+    //     this.workerCounts.set(
+    //       name,
+    //       existingCount > 0 ? existingCount : this.MIN_WORKERS,
+    //     );
+    //   }
+    // }
   }
   onModuleInit(): void {
     this.intervalHandle = setInterval(() => this.tick(), this.POLL_INTERVAL_MS);
@@ -130,6 +163,52 @@ export class AutoScalerService implements OnModuleInit {
       }
     }
   }
+  // private async evaluateQueue(queueName: string, queue: Queue): Promise<void> {
+  //   const counts = await queue.getJobCounts(
+  //     "waiting",
+  //     "active",
+  //     "delayed",
+  //     "prioritized",
+  //   );
+  //   const depth =
+  //     counts.waiting + counts.active + counts.delayed + counts.prioritized;
+
+  //   this.logger.debug(
+  //     `[${queueName}] RAW: waiting=${counts.waiting} active=${counts.active} delayed=${counts.delayed}
+  //     prioritized=${counts.prioritized} total=${depth}`,
+  //   );
+  //   const current = this.workerCounts.get(queueName) ?? this.MIN_WORKERS;
+  //   const now = Date.now();
+  //   const lastScale = this.lastScaleAt.get(queueName) ?? 0;
+  //   const coolDownOk = now - lastScale >= this.MIN_COOLDOWN_MS;
+  //   // only log when there is actual work or scalling event
+  //   if (depth > 0) {
+  //     this.logger.debug(
+  //       `[${queueName}] depth=${depth} workers=${current} cooldown=${coolDownOk ? "ok" : "wait"}`,
+  //     );
+  //   }
+  //   if (!coolDownOk) return;
+
+  //   if (depth > this.SCALE_UP_THRESHOLD && current < this.MAX_WORKERS) {
+  //     await this.scaleUp(queueName, current);
+  //     this.lastScaleAt.set(queueName, now);
+  //     return;
+  //   }
+  //   // waiting === 0, active === 0 , delayed === 0, priotrized === 0
+  //   if (depth <= this.SCALE_DOWN_THRESHOLD && current > this.MIN_WORKERS) {
+  //     await this.scaleDown(queueName, current);
+  //     this.lastScaleAt.set(queueName, now);
+  //   }
+  // }
+
+  // syncWorkerCountsFromRegistery(): void {
+  //   if (!this.workerRegistery) return;
+  //   for (const queueName of this.queues.keys()) {
+  //     const actual = this.workerRegistery.getWorkerCount(queueName);
+  //     this.workerCounts.set(queueName, actual > 0 ? actual : this.MIN_WORKERS);
+  //   }
+  // }
+
   private async evaluateQueue(queueName: string, queue: Queue): Promise<void> {
     const counts = await queue.getJobCounts(
       "waiting",
@@ -137,35 +216,40 @@ export class AutoScalerService implements OnModuleInit {
       "delayed",
       "prioritized",
     );
-    const depth =
-      counts.waiting + counts.active + counts.delayed + counts.prioritized;
+    // const workers = this.workerCounts.get(queueName) ?? this.MIN_WORKERS;
+    const workers =
+      this.workerRegistery?.getWorkerCount(queueName) ?? this.MIN_WORKERS;
 
+    const active = counts.active;
+    const backlog = counts.waiting + counts.delayed + counts.prioritized;
+
+    const utilization = workers > 0 ? active / workers : 0;
     this.logger.debug(
-      `[${queueName}] RAW: waiting=${counts.waiting} active=${counts.active} delayed=${counts.delayed} 
-      prioritized=${counts.prioritized} total=${depth}`,
+      `[${queueName}] active=${active}, workers=${workers}, utilization=${utilization.toFixed(2)}, backlog=${backlog}`,
     );
-    const current = this.workerCounts.get(queueName) ?? this.MIN_WORKERS;
+
     const now = Date.now();
     const lastScale = this.lastScaleAt.get(queueName) ?? 0;
     const coolDownOk = now - lastScale >= this.MIN_COOLDOWN_MS;
-    // only log when there is actual work or scalling event
-    if (depth > 0) {
-      this.logger.debug(
-        `[${queueName}] depth=${depth} workers=${current} cooldown=${coolDownOk ? "ok" : "wait"}`,
-      );
-    }
     if (!coolDownOk) return;
 
-    if (depth > this.SCALE_UP_THRESHOLD && current < this.MAX_WORKERS) {
-      await this.scaleUp(queueName, current);
+    if (utilization >= 1 && backlog > 0 && workers < this.MAX_WORKERS) {
+      await this.scaleUp(queueName, workers);
       this.lastScaleAt.set(queueName, now);
       return;
     }
-    if (depth < this.SCALE_DOWN_THRESHOLD && current > this.MIN_WORKERS) {
-      await this.scaleDown(queueName, current);
+
+    if (
+      utilization < 0.3 &&
+      backlog === 0 &&
+      active === 0 &&
+      workers > this.MIN_WORKERS
+    ) {
+      await this.scaleDown(queueName, workers);
       this.lastScaleAt.set(queueName, now);
     }
   }
+
   // scale actions
   private async scaleUp(queueName: string, current: number): Promise<void> {
     const next = current + 1;
@@ -173,7 +257,11 @@ export class AutoScalerService implements OnModuleInit {
     if (this.workerRegistery) {
       await this.workerRegistery.spawnWorker(queueName);
     }
-    this.workerCounts.set(queueName, next);
+    // this.workerCounts.set(queueName, next);
+
+    // record in prometheus and update worker count gauge
+    this.metricsCallbacks?.recordScaleUp(queueName);
+    this.metricsCallbacks?.onWorkerSpawned(queueName);
   }
   private async scaleDown(queueName: string, current: number): Promise<void> {
     const next = Math.max(this.MIN_WORKERS, current - 1);
@@ -183,11 +271,16 @@ export class AutoScalerService implements OnModuleInit {
     if (this.workerRegistery) {
       await this.workerRegistery.terminateWorker(queueName);
     }
-    this.workerCounts.set(queueName, next);
+    // this.workerCounts.set(queueName, next);
+
+    // reecord in prometheus and update worker count gauge
+    this.metricsCallbacks?.recordScaleDown(queueName);
+    this.metricsCallbacks?.onWorkerTerminated(queueName);
   }
   // metrics
   // snapshot of current worker counts - useful for a health/metrics endpoint.
   getMetrics(): Record<string, number> {
-    return Object.fromEntries(this.workerCounts);
+    if (!this.workerRegistery) return {};
+    return this.workerRegistery.getAllWorkerCounts();
   }
 }

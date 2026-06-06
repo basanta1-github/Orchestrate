@@ -9,11 +9,21 @@ import {
   Notification,
   NotificationChanel,
   NotificationStatus,
+  QueueMetricsCollector,
+  QueueReconcileCollector,
   TenantCapService,
 } from "@jobque/shared";
 import { v4 as uuidv4 } from "uuid";
 import validator from "validator";
 import { HunterService } from "./provider/hunter.service";
+import { queue } from "sharp";
+
+/**
+ *
+ *  MetricsModule is @Global(), NestJS will inject
+ * QueueMetricsCollector automatically — you do NOT need to add
+ * MetricsModule to any module's imports array.
+ */
 
 @Injectable()
 export class EmailProcessor extends BaseProcessor {
@@ -26,8 +36,16 @@ export class EmailProcessor extends BaseProcessor {
     dataSource: DataSource,
     chainService: ChainService,
     tenantCapService: TenantCapService,
+    queueMetrics: QueueMetricsCollector,
+    queueReconcileCollector: QueueReconcileCollector,
   ) {
-    super(dataSource, chainService, tenantCapService);
+    super(
+      dataSource,
+      chainService,
+      tenantCapService,
+      queueMetrics,
+      queueReconcileCollector,
+    );
   }
   protected async process(job: BullJob): Promise<void> {
     const { metadata } = job.data;

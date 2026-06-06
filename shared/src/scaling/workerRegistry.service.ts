@@ -74,7 +74,7 @@ export class workerRegistryService implements OnModuleDestroy {
     this.workers.set(queueName, existing);
 
     this.logger.log(
-      `Spawned worker #${existing.length} for queue "${queueName}`,
+      `Spawned worker #${existing.length} for queue "${queueName}"`,
     );
   }
   async terminateWorker(queueName: string): Promise<void> {
@@ -96,6 +96,19 @@ export class workerRegistryService implements OnModuleDestroy {
   }
   getWorkerCount(queueName: string): number {
     return this.workers.get(queueName)?.length ?? 0;
+  }
+
+  /**
+   * Returns a snapSHot of all queue -> worker count pairs.
+   * used by workerHealthCollector to emit per-queue worker count metrics
+   */
+
+  getAllWorkerCounts(): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const [queueName, workerlist] of this.workers.entries()) {
+      result[queueName] = workerlist.length;
+    }
+    return result;
   }
 
   // lifecycles
@@ -125,6 +138,11 @@ export class workerRegistryService implements OnModuleDestroy {
     });
     worker.on("active", (job) => {
       this.logger.log(
+        `[${queueName}] ACTIVE BullJob=${job.id} DBJob=${job.data.jobId}`,
+      );
+    });
+    worker.on("completed", (job) => {
+      this.logger.log(
         `[${queueName}] COMPLETED BullJob=${job.id} DBJob=${job.data.jobId}`,
       );
     });
@@ -135,5 +153,14 @@ export class workerRegistryService implements OnModuleDestroy {
       );
     });
     return worker;
+  }
+
+  registerExistingWorker(queueName: string, worker: Worker): void {
+    const existing = this.workers.get(queueName) ?? [];
+    existing.push(worker);
+    this.workers.set(queueName, existing);
+    this.logger.log(
+      `Registererd existing worker #${existing.length} for queue "${queueName}`,
+    );
   }
 }

@@ -4,6 +4,7 @@ import {
   // ChainService,
   DatabaseModule,
   JobsModule,
+  // MetricsModule,
   // JobsService,
   QueueModule,
   workerRegistryService,

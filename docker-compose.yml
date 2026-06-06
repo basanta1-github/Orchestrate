@@ -15,9 +15,12 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/email-worker/worker.js
+    # command: node dist/email-worker/worker.js
+    command: node dist/main.js
     env_file:
       - .env
+    environment:
+      - WORKER_TYPE=email
     depends_on:
       - redis
     # restart: unless-stopped
@@ -26,9 +29,12 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/etl-worker/worker.js
+    # command: node dist/etl-worker/worker.js
+    command:  node dist/main.js
     env_file:
       - .env
+    environment:
+      - WORKER_TYPE=etl
     depends_on:
       - redis
     # restart: unless-stopped
@@ -37,10 +43,13 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/media-worker/worker.js
+    # command: node dist/media-worker/worker.js
+    command: node dist/main.js
     working_dir: /app/workers
     env_file:
       - .env
+    environment:
+      - WORKER_TYPE=media
     depends_on:
        - redis
     restart: unless-stopped
@@ -49,9 +58,12 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/ml-worker/worker.js
+    # command: node dist/ml-worker/worker.js
+    command: node dist/main.js
     env_file:
       - .env
+    environment:
+      - WORKER_TYPE=ml
     depends_on:
       - redis
     # restart: unless-stopped
@@ -60,9 +72,12 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/report-worker/worker.js
+    # command: node dist/report-worker/worker.js
+    command: node dist/main.js
     env_file:
       - .env
+    environment:
+      - WORKER_TYPE=report
     depends_on:
       - redis
     # restart: unless-stopped

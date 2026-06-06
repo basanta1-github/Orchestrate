@@ -9,6 +9,8 @@ import {
   ChainService,
   Job,
   JobStatus,
+  QueueMetricsCollector,
+  QueueReconcileCollector,
   QueueService,
   TenantCapService,
 } from "@jobque/shared";
@@ -21,9 +23,16 @@ export class ETLProcessor extends BaseProcessor {
     chainService: ChainService,
     tenantCapService: TenantCapService,
     private readonly etlService: ETLService,
-    // private readonly queueService: QueueService,
+    queueMetrics: QueueMetricsCollector,
+    queueReconcileCollector: QueueReconcileCollector,
   ) {
-    super(dataSource, chainService, tenantCapService);
+    super(
+      dataSource,
+      chainService,
+      tenantCapService,
+      queueMetrics,
+      queueReconcileCollector,
+    );
 
     console.log("etlService constructor =", this.etlService.constructor.name);
     // Should print "ETLService", not "DataSource"
@@ -97,6 +106,7 @@ export class ETLProcessor extends BaseProcessor {
         priorityLevel: job.data.priorityLevel ?? "NONE",
         retries: job.opts.attempts ?? 5,
         tenantId: job.data.tenantId,
+        queueName: job.queueName,
       });
 
       this.logger.log("Next ETL job automarically triggered");

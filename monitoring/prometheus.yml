@@ -1,0 +1,46 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: "local"
+    project: "jobque"
+
+rule_files:
+  - "/etc/prometheus/alerts.yml"
+  # - "alerts.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  - job_name: "jobque-api"
+    static_configs:
+      - targets: ["api:3001"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    relabel_configs:
+      - target_label: service
+        replacement: api
+
+  - job_name: "jobque-worker"
+    static_configs:
+      - targets:
+          - "email-worker:3001"
+          - "etl-worker:3001"
+          - "media-worker:3001"
+          - "ml-worker:3001"
+          - "report-worker:3001"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    relabel_configs:
+      - target_label: service
+        replacement: worker
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

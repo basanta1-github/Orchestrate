@@ -12,6 +12,7 @@ import { CreateJobDto } from "./dto/create-job.dto";
 import { JobStatus } from "./jobs.constants";
 import { RecurringJob } from "../database/entities/recurring-jobs.entity";
 import { TenantCapService } from "../scaling/tenant-cap.service";
+import { resolveQueueName } from "../queue/resolvedQueueName";
 
 @Injectable()
 export class JobsService {
@@ -98,6 +99,7 @@ export class JobsService {
         delayMs: savedJob.delayMs,
         cron: savedJob.cron,
         idempotencyKey: savedJob.idempotencyKey,
+        queueName: resolveQueueName(savedJob.type),
       });
       // result.status is "queued" or "staged" —  log or return it.
       console.log(`Job ${savedJob.id} — ${result.status} (tenant=${tenantId})`);

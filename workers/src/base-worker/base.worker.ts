@@ -2,6 +2,11 @@ import { Queue, Worker, Job as BullJob, KeepJobs, QueueEvents } from "bullmq";
 import { BaseProcessor } from "./base.processor";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import Redis from "ioredis";
+import {
+  TenantCapService,
+  workerRegistryService,
+  QueueReconcileCollector,
+} from "@jobque/shared";
 
 @Injectable()
 export abstract class BaseWorker {
@@ -19,7 +24,11 @@ export abstract class BaseWorker {
   // in-memory counter for jobs per minute
   // private jobTimeStamps: number[] = [];
 
-  constructor(protected readonly queueName: string) {}
+  constructor(
+    protected readonly queueName: string,
+    protected readonly workerRegistery: workerRegistryService,
+    protected readonly queueReconcileCollector: QueueReconcileCollector,
+  ) {}
 
   // child classes must implement this to return thieir processor
   // protected abstract getProcessor(): BaseProcessor;
@@ -69,6 +78,7 @@ export abstract class BaseWorker {
         removeOnFail: false as unknown as KeepJobs,
       },
     );
+    this.workerRegistery.registerExistingWorker(this.queueName, this.worker);
 
     this.queueEvents = new QueueEvents(this.queueName, { connection });
     // this.worker.on("active", (job) =>
@@ -81,6 +91,22 @@ export abstract class BaseWorker {
     //     `COMPLETED BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
     //   );
     // });
+    this.worker.on("active", async (job) => {
+      this.logger.log(
+        `ACTIVE BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
+      );
+
+      // this.queueReconcileCollector.markActive(this.queueName);
+    });
+    this.worker.on("completed", async (job) => {
+      if (!job) return;
+
+      this.logger.log(
+        `COMPLETED BullJob=${job.id} DBJob=${job.data.jobId} Queue=${job.queueName} PriorityLevel=${job.data.priorityLevel} BullPriority=${job.opts.priority}`,
+      );
+
+      // this.queueReconcileCollector.markCompleted(this.queueName);
+    });
 
     this.worker.on("failed", async (job, err) => {
       if (!job) return;
@@ -91,7 +117,7 @@ export abstract class BaseWorker {
         `Job failed ${job.id} | attempt ${job.attemptsMade}/${maxAttempts}`,
         err.stack,
       );
-
+      // this.queueReconcileCollector.markFailed(this.queueName);
       // final faliure move to DLQ
       if (job.attemptsMade >= maxAttempts) {
         const dlq = new Queue(`${this.queueName}_DLQ`, {

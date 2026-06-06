@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { Job } from "../database/entities/job.entity";
 import { JobStatus } from "../jobs";
 import { TenantCapService } from "../scaling/tenant-cap.service";
+import { resolveQueueName } from "../queue/resolvedQueueName";
 
 export interface batchJobItem {
   key: string;
@@ -133,6 +134,7 @@ export class BatchJobService {
           metadata: { ...saved.metadata, batchId, batchKey: item.key },
           delayMs: item.delayMs,
           idempotencyKey: item.idempotencyKey,
+          queueName: resolveQueueName(saved.type),
         });
         this.logger.log(
           `Batch ${batchId} | job ${saved.id} (${item.key} / ${item.type} / ${item.priorityLevel ?? "NONE"}) → ${result.status}`,

@@ -1,0 +1,89 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: "smtp.gmail.com:587"
+  smtp_from: "alerts@MisteyFacilities.com"
+  smtp_auth_username: "${SMTP_USER}"
+  smtp_auth_password: "${SMTP_PASS}"
+
+route:
+  receiver: "team-slack"
+  group_by: ["alertname", "queue", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: "team-critical"
+      group_wait: 10s
+      repeat_interval: 1h
+    - matchers:
+        - severity = warning
+      receiver: "team-slack"
+      repeat_interval: 4h
+    - matchers:
+        - severity = info
+      receiver: "team-info"
+      repeat_interval: 24h
+
+receivers:
+  - name: "team-slack"
+    slack_configs:
+      # - api_url: "${SLACK_WEBHOOK_URL}"
+      - api_url_file: /run/secrets/slack_webhook
+        channel: "#jobque-alerts"
+        username: "JobQue Alertmanager"
+        icon_emoji: ":warning:"
+        title: "[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}"
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Severity:* {{ .Labels.severity }}
+          *Queue:* {{ .Labels.queue }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+  - name: "team-critical"
+    slack_configs:
+      # - api_url: "${SLACK_WEBHOOK_URL}"
+      - api_url_file: /run/secrets/slack_webhook
+        channel: "#jobque-critical"
+        username: "JobQue CRITICAL"
+        icon_emoji: ":rotating_light:"
+        title: ":rotating_light: CRITICAL: {{ .CommonAnnotations.summary }}"
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Queue: {{ .Labels.queue }}
+          {{ end }}
+        send_resolved: true
+    email_configs:
+      - to: "oncall@yourcompany.com"
+        # subject: "[CRITICAL] JobQue: {{ .CommonAnnotations.summary }}"
+        html: |
+          <h2 style="color:red">CRITICAL JobQue Alert</h2>
+          {{ range .Alerts }}
+          <p><b>{{ .Annotations.summary }}</b></p>
+          <p>{{ .Annotations.description }}</p>
+          <p>Queue: {{ .Labels.queue }}</p>
+          {{ end }}
+
+  - name: "team-info"
+    slack_configs:
+      # - api_url: "${SLACK_WEBHOOK_URL}"
+      - api_url_file: /run/secrets/slack_webhook
+        channel: "#jobque-info"
+        username: "JobQue Info"
+        icon_emoji: ":information_source:"
+        title: "[INFO] {{ .CommonAnnotations.summary }}"
+        text: "{{ .CommonAnnotations.description }}"
+        send_resolved: false
+
+inhibit_rules:
+  - source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity = warning
+    equal: ["queue", "alertname"]

@@ -2,12 +2,18 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BaseWorker } from "../base-worker/base.worker";
 // import { BaseProcessor } from "../base-worker/base.processor";
 import { MediaProcessor } from "./processor";
+import { QueueReconcileCollector, workerRegistryService } from "@jobque/shared";
 // import { DataSource } from "typeorm";
 
 @Injectable()
 export class MediaWorker extends BaseWorker implements OnModuleInit {
-  constructor(protected readonly mediaProcessor: MediaProcessor) {
-    super("media-jobs"); // no proecessor passed to super
+  constructor(
+    protected readonly mediaProcessor: MediaProcessor,
+    workerRegistery: workerRegistryService,
+    queueReconcileCollector: QueueReconcileCollector,
+  ) {
+    super("media-jobs", workerRegistery, queueReconcileCollector);
+    // no proecessor passed to super
     // this.mediaProcessor = processor;
     // console.log("MediaWorker constructor processor:", mediaProcessor);
     // console.log("Processor injected:", !!mediaProcessor);

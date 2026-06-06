@@ -25,6 +25,7 @@ export class NotificationsController {
       priorityLevel: payload.priorityLevel ?? "NONE",
       retries,
       metadata: payload,
+      queueName: payload.queueName,
     });
   }
 }

@@ -1,4 +1,4 @@
-import { JobsOptions, Queue, RepeatOptions } from "bullmq";
+import { JobsOptions, Queue, RepeatOptions, Job as BullJob } from "bullmq";
 import { JobQueuePayload } from "./job-queue.payload";
 import { Injectable, Logger } from "@nestjs/common";
 
@@ -151,4 +151,26 @@ export class QueueService {
   getQueues(): Map<string, Queue> {
     return this.queues;
   }
+
+  getQueueByName(queueName: string): Queue | undefined {
+    return this.queues.get(queueName);
+  }
+  // async getJobsByStates(
+  //   queueName: string,
+  //   states: Array<
+  //     "waiting" | "active" | "completed" | "failed" | "delayed" | "prioritized"
+  //   >,
+  //   start = 0,
+  //   end = 50,
+  // ): Promise<Record<string, BullJob[]>> {
+  //   const queue = this.queues.get(queueName);
+  //   if (!queue) throw new Error(`Queue "${queueName}" not found`);
+
+  //   const result: Record<string, BullJob[]> = {};
+  //   for (const state of states) {
+  //     const stateJobs = await queue.getJobs([state], start, end, true);
+  //     result[state] = stateJobs;
+  //   }
+  //   return result;
+  // }
 }

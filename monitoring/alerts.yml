@@ -1,0 +1,181 @@
+groups:
+  - name: job_failures
+    interval: 30s
+    rules:
+      - alert: HighJobFailureRate
+        expr: |
+          (
+            rate(jobque_jobs_failed_total[5m])
+            /
+            (rate(jobque_jobs_completed_total[5m]) + rate(jobque_jobs_failed_total[5m]) + 0.001)
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High job failure rate on {{ $labels.queue }}"
+          description: >
+            Failure rate is {{ $value | humanizePercentage }} on queue
+            {{ $labels.queue }} (job_type={{ $labels.job_type }}). Threshold: 5%.
+
+      - alert: CriticalJobFailureRate
+        expr: |
+          (
+            rate(jobque_jobs_failed_total[5m])
+            /
+            (rate(jobque_jobs_completed_total[5m]) + rate(jobque_jobs_failed_total[5m]) + 0.001)
+          ) > 0.20
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL failure rate on {{ $labels.queue }}"
+          description: "Over 20% of jobs failing on {{ $labels.queue }}. Immediate action required."
+
+  - name: dlq_alerts
+    interval: 60s
+    rules:
+      - alert: DLQDepthHigh
+        expr: jobque_dlq_depth > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "DLQ depth high for {{ $labels.queue }}"
+          description: "{{ $value }} jobs in DLQ for {{ $labels.queue }}. Review and replay or discard."
+
+      - alert: DLQDepthCritical
+        expr: jobque_dlq_depth > 100
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL DLQ depth for {{ $labels.queue }}"
+          description: "{{ $value }} jobs in DLQ. Systematic failure suspected. Escalate immediately."
+
+  - name: worker_health
+    interval: 30s
+    rules:
+      - alert: WorkerHeartbeatMissing
+        expr: (time() - jobque_worker_heartbeat_timestamp) > 60
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Worker heartbeat missing — queue {{ $labels.queue }}"
+          description: >
+            Worker for {{ $labels.queue }} (PID={{ $labels.pid }}) has not
+            sent a heartbeat in over 60s. Worker may have crashed.
+
+      - alert: WorkerHighMemory
+        expr: jobque_worker_memory_mb > 1500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker high memory — PID {{ $labels.pid }}"
+          description: "Worker PID={{ $labels.pid }} using {{ $value }}MB RSS. Possible memory leak."
+
+      - alert: WorkerHighCPU
+        expr: jobque_worker_cpu_percent > 90
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker high CPU — PID {{ $labels.pid }}"
+          description: "Worker PID={{ $labels.pid }} CPU at {{ $value }}%. Consider scaling out."
+
+      - alert: NoWorkersForQueue
+        expr: jobque_worker_count == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No workers running for {{ $labels.queue }}"
+          description: "Queue {{ $labels.queue }} has 0 active workers. Jobs accumulating."
+
+  - name: queue_health
+    interval: 30s
+    rules:
+      - alert: QueueDepthHigh
+        expr: jobque_queue_depth{state="waiting"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.queue }} has {{ $value }} waiting jobs"
+          description: "More than 1000 jobs waiting. Autoscaler may need higher MAX_WORKERS."
+
+      - alert: JobWaitTimeTooHigh
+        expr: |
+          histogram_quantile(0.95,
+            rate(jobque_job_wait_seconds_bucket[10m])
+          ) > 120
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Jobs waiting too long in {{ $labels.queue }}"
+          description: "P95 wait time is {{ $value }}s (threshold: 120s). Review worker capacity."
+
+      - alert: JobProcessingSlowP95
+        expr: |
+          histogram_quantile(0.95,
+            rate(jobque_job_duration_seconds_bucket[10m])
+          ) > 300
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Job processing slow in {{ $labels.queue }}"
+          description: "P95 duration is {{ $value }}s for {{ $labels.job_type }}. Investigate."
+
+  - name: tenant_cap
+    interval: 60s
+    rules:
+      - alert: TenantFrequentCapHits
+        expr: rate(jobque_tenant_cap_hit_total[10m]) > 0.5
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Tenant {{ $labels.tenant_id }} frequently hitting cap"
+          description: "Consider raising MAX_CONCURRENT_PER_TENANT for this tenant."
+
+      - alert: TenantStagingBacklogHigh
+        expr: jobque_tenant_staged_jobs > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tenant {{ $labels.tenant_id }} staging backlog high"
+          description: "{{ $value }} jobs staged (cap-blocked) for tenant {{ $labels.tenant_id }}."
+
+  - name: api_health
+    interval: 30s
+    rules:
+      - alert: APIHighErrorRate
+        expr: |
+          (
+            rate(jobque_http_requests_total{status_code=~"5.."}[5m])
+            /
+            (rate(jobque_http_requests_total[5m]) + 0.001)
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API error rate > 1% on {{ $labels.route }}"
+          description: "{{ $value | humanizePercentage }} 5xx errors on {{ $labels.method }} {{ $labels.route }}."
+
+      - alert: APIHighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            rate(jobque_http_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API p95 latency > 2s on {{ $labels.route }}"
+          description: "P95 response time is {{ $value }}s for {{ $labels.method }} {{ $labels.route }}."

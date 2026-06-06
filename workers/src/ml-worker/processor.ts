@@ -9,7 +9,12 @@ import { MLJobPayload } from "./types";
 import { SummarizerEngine } from "./engines/summarizer.engine";
 import { ClassifierEngine } from "./engines/classification.engine";
 import { OCREngine } from "./engines/ocr.engine";
-import { ChainService, TenantCapService } from "@jobque/shared";
+import {
+  ChainService,
+  QueueMetricsCollector,
+  QueueReconcileCollector,
+  TenantCapService,
+} from "@jobque/shared";
 
 @Injectable()
 export class MLProcessor extends BaseProcessor {
@@ -19,8 +24,16 @@ export class MLProcessor extends BaseProcessor {
     @InjectDataSource() dataSource: DataSource,
     chainService: ChainService,
     tenantCapService: TenantCapService,
+    queueMetrics: QueueMetricsCollector,
+    queueReconcileCollector: QueueReconcileCollector,
   ) {
-    super(dataSource, chainService, tenantCapService);
+    super(
+      dataSource,
+      chainService,
+      tenantCapService,
+      queueMetrics,
+      queueReconcileCollector,
+    );
   }
   protected async process(job: BullJob): Promise<void> {
     // read from metadata

@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Queue, Job as BullJob } from "bullmq";
+import { QueueMetricsCollector } from "../metrics";
 
 /**
  * BandPromoterService
@@ -40,6 +41,13 @@ export class BandPromoterService implements OnModuleInit {
 
   private queues: Map<string, Queue> = new Map();
   private intervalHandle: NodeJS.Timeout | null = null;
+
+  private recordPromotion: ((queue: string) => void) | null = null;
+
+  // constructor(private readonly queueMetrics: QueueMetricsCollector) {}
+  setMetricsCallback(cb: (queue: string) => void): void {
+    this.recordPromotion = cb;
+  }
 
   // called by queueModule to register queues after they are created.
   registerQueues(queues: Map<string, Queue>): void {
@@ -106,6 +114,11 @@ export class BandPromoterService implements OnModuleInit {
       this.logger.log(
         `Queue "${queueName}" - promoted ${promoted} job(s) to high band`,
       );
+
+      // record promotion count in prometheus
+      for (let i = 0; i < promoted; i++) {
+        this.recordPromotion?.(queueName);
+      }
     }
   }
   /**

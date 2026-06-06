@@ -4,6 +4,8 @@ import { BandPromoterService } from "../scaling/band.promoter.service";
 import { AutoScalerService } from "../scaling/autoScaler.service";
 import { workerRegistryService } from "../scaling/workerRegistry.service";
 import { TenantCapService } from "../scaling/tenant-cap.service";
+import { QueueMetricsCollector, WorkerHealthCollector } from "../metrics";
+// import { WorkerHealthCollector } from "../metrics/worker-health.collector";
 
 /**
  * QueueModule
@@ -42,6 +44,8 @@ export class QueueModule implements OnModuleInit {
     private readonly bandPromoter: BandPromoterService,
     private readonly autoScalar: AutoScalerService,
     private readonly workerRegistery: workerRegistryService,
+    private readonly queueMetrics: QueueMetricsCollector,
+    private readonly workerHealthCollector: WorkerHealthCollector,
   ) {}
   /**
    * After all providers are initialized, wire the queues into the services
@@ -56,12 +60,14 @@ export class QueueModule implements OnModuleInit {
 
     this.bandPromoter.registerQueues(queues);
     this.autoScalar.registerQueues(queues);
+    this.queueMetrics.registerQueues(queues);
 
-    // connect autoscaler to worker registery so it can spawn/terminate
-    this.autoScalar.setWorkerregistery({
-      spawnWorker: (name) => this.workerRegistery.spawnWorker(name),
-      terminateWorker: (name) => this.workerRegistery.terminateWorker(name),
-      getWorkerCount: (name) => this.workerRegistery.getWorkerCount(name),
+    this.autoScalar.setWorkerRegistery(this.workerRegistery);
+
+    this.workerHealthCollector.setWorkerRegistryCallbacks({
+      getAllWorkerCounts: () => this.workerRegistery.getAllWorkerCounts(),
+      getWorkerCount: (queueName: string) =>
+        this.workerRegistery.getWorkerCount(queueName),
     });
   }
 }

@@ -11,6 +11,7 @@ export interface JobQueuePayload {
   idempotencyKey?: string;
   recurringJobId?: string;
   bullPriorityOverride?: number;
+  queueName: string;
   /**
    * bull priority obvverride - set by chainservice for workflow jobs
    *

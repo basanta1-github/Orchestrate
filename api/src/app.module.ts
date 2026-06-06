@@ -7,12 +7,21 @@ import {
   AuthModule,
   JwtAuthGuard,
   RoleGuard,
+  AutoScalerService,
+  QueueMetricsCollector,
+  WorkerHealthCollector,
+  BandPromoterService,
+  TenantCapService,
+  TenantMetricsCollector,
+  QueueModule,
 } from '@jobque/shared';
 import { WorkerModule } from '@jobque/workers';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
 import { DataSource } from 'typeorm';
+import { MetricsModule, HttpMetricsInterceptor } from '@jobque/shared';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -33,11 +42,21 @@ import { DataSource } from 'typeorm';
       logging: ['error', 'warn'],
     }),
     DatabaseModule,
+    QueueModule,
     JobsModule,
-    WorkerModule,
     AuthModule,
+    MetricsModule,
+    WorkerModule,
   ],
-  providers: [AppService, JwtAuthGuard, RoleGuard],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpMetricsInterceptor,
+    },
+    AppService,
+    JwtAuthGuard,
+    RoleGuard,
+  ],
   controllers: [AppController],
 })
 // export class AppModule {}
@@ -45,8 +64,31 @@ export class AppModule implements OnApplicationBootstrap {
   constructor(
     @Inject(AppService) private readonly appService: AppService,
     private readonly dataSource: DataSource,
+    private readonly autoScaler: AutoScalerService,
+    private readonly queueMetrics: QueueMetricsCollector,
+    private readonly workerHealth: WorkerHealthCollector,
+    private readonly bandPromoter: BandPromoterService,
+    private readonly tenantCap: TenantCapService,
+    private readonly tenantMetrics: TenantMetricsCollector,
   ) {}
   onApplicationBootstrap() {
+    // wiring metrics into autoscaler so that all modules are ready
+
+    // this.autoScaler.syncWorkerCountsFromRegistery();
+    this.autoScaler.setMetricsCallbacks({
+      recordScaleUp: (q) => this.queueMetrics.recordScaleUp(q),
+      recordScaleDown: (q) => this.queueMetrics.recordScaleDown(q),
+      onWorkerSpawned: (q) => this.workerHealth.onWorkerSpawned(q),
+      onWorkerTerminated: (q) => this.workerHealth.onWorkerTerminated(q),
+    });
+
+    this.bandPromoter.setMetricsCallback((q) =>
+      this.queueMetrics.recordBandPromotion(q),
+    );
+
+    this.tenantCap.setMetricsCallback((id) =>
+      this.tenantMetrics.recordCapHit(id),
+    );
     if (this.appService) {
       console.log('✅ AppService exists in AppModule:', this.appService);
     } else {

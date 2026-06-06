@@ -1,0 +1,147 @@
+{
+  "title": "JobQue — System Overview",
+  "uid": "jobque-overview",
+  "tags": ["jobque", "monitoring"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Queue Depth — Waiting Jobs",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [{ "expr": "jobque_queue_depth{state=\"waiting\"}", "legendFormat": "{{queue}}" }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green" }, { "color": "yellow", "value": 100 }, { "color": "red", "value": 500 }] } } }
+    },
+    {
+      "id": 2,
+      "title": "Active Jobs Being Processed",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [{ "expr": "jobque_queue_depth{state=\"active\"}", "legendFormat": "{{queue}}" }]
+    },
+    {
+      "id": 3,
+      "title": "Jobs Completed / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [{ "expr": "rate(jobque_jobs_completed_total[5m])", "legendFormat": "{{queue}} / {{job_type}}" }]
+    },
+    {
+      "id": 4,
+      "title": "Jobs Failed / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [{ "expr": "rate(jobque_jobs_failed_total[5m])", "legendFormat": "{{queue}} / {{job_type}}" }],
+      "fieldConfig": { "defaults": { "color": { "fixedColor": "red", "mode": "fixed" } } }
+    },
+    {
+      "id": 5,
+      "title": "Job Processing Duration — p50 / p95 / p99 (seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(jobque_job_duration_seconds_bucket[5m]))", "legendFormat": "p50 {{queue}}/{{job_type}}" },
+        { "expr": "histogram_quantile(0.95, rate(jobque_job_duration_seconds_bucket[5m]))", "legendFormat": "p95 {{queue}}/{{job_type}}" },
+        { "expr": "histogram_quantile(0.99, rate(jobque_job_duration_seconds_bucket[5m]))", "legendFormat": "p99 {{queue}}/{{job_type}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Job Wait Time p95 (seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "targets": [{ "expr": "histogram_quantile(0.95, rate(jobque_job_wait_seconds_bucket[5m]))", "legendFormat": "p95 {{queue}}" }]
+    },
+    {
+      "id": 7,
+      "title": "Worker Count per Queue",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "targets": [{ "expr": "jobque_worker_count", "legendFormat": "{{queue}}", "instant": true }]
+    },
+    {
+      "id": 8,
+      "title": "Worker Memory RSS (MB)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "targets": [{ "expr": "jobque_worker_memory_mb", "legendFormat": "PID {{pid}}" }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green" }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 1500 }] } } }
+    },
+    {
+      "id": 9,
+      "title": "Worker CPU %",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "targets": [{ "expr": "jobque_worker_cpu_percent", "legendFormat": "PID {{pid}}" }]
+    },
+    {
+      "id": 10,
+      "title": "DLQ Depth",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 40 },
+      "targets": [{ "expr": "jobque_dlq_depth", "legendFormat": "{{queue}} DLQ", "instant": true }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green" }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 50 }] } } }
+    },
+    {
+      "id": 11,
+      "title": "Autoscaler Scale Events / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 40 },
+      "targets": [
+        { "expr": "rate(jobque_autoscaler_scale_up_total[5m])", "legendFormat": "UP {{queue}}" },
+        { "expr": "rate(jobque_autoscaler_scale_down_total[5m])", "legendFormat": "DOWN {{queue}}" }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Tenant Inflight Jobs",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 40 },
+      "targets": [{ "expr": "jobque_tenant_inflight_jobs", "legendFormat": "{{tenant_id}}", "instant": true }]
+    },
+    {
+      "id": 13,
+      "title": "Band Promotions / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 46 },
+      "targets": [{ "expr": "rate(jobque_band_promotions_total[5m])", "legendFormat": "{{queue}}" }]
+    },
+    {
+      "id": 14,
+      "title": "HTTP Request Rate by Route",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 46 },
+      "targets": [{ "expr": "rate(jobque_http_requests_total[5m])", "legendFormat": "{{method}} {{route}} {{status_code}}" }]
+    },
+    {
+      "id": 15,
+      "title": "Tenant Cap Hits / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 52 },
+      "targets": [{ "expr": "rate(jobque_tenant_cap_hit_total[5m])", "legendFormat": "{{tenant_id}}" }]
+    },
+    {
+      "id": 16,
+      "title": "Tenant Staged Jobs",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 52 },
+      "targets": [{ "expr": "jobque_tenant_staged_jobs", "legendFormat": "{{tenant_id}}" }]
+    },
+    {
+      "id": 17,
+      "title": "Node.js Event Loop Lag (ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 58 },
+      "targets": [{ "expr": "rate(jobque_nodejs_eventloop_lag_seconds_sum[5m]) * 1000", "legendFormat": "event loop lag" }]
+    },
+    {
+      "id": 18,
+      "title": "Node.js Heap Used (MB)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 58 },
+      "targets": [{ "expr": "jobque_nodejs_heap_size_used_bytes / 1024 / 1024", "legendFormat": "heap used MB" }]
+    }
+  ]
+}

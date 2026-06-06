@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types":["node"],
     "outDir": "./dist",
     "rootDir": "src",  // source root is src
     "module": "commonjs",

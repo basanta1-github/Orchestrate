@@ -8,6 +8,7 @@ import { JobStatus } from "../jobs";
 import { Body, BadRequestException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { TenantCapService } from "../scaling";
+import { resolveQueueName } from "../queue/resolvedQueueName";
 // import { DEMO_USER } from "../auth/demo-user";
 
 /**
@@ -329,6 +330,7 @@ export class ChainService {
       retries: candidate.retries,
       metadata: candidate.metadata,
       idempotencyKey: candidate.id,
+      queueName: resolveQueueName(candidate.type),
     });
 
     this.logger.log(

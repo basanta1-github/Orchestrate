@@ -10,7 +10,12 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
-import { ChainService, TenantCapService } from "@jobque/shared";
+import {
+  ChainService,
+  QueueMetricsCollector,
+  QueueReconcileCollector,
+  TenantCapService,
+} from "@jobque/shared";
 
 @Injectable()
 export class MediaProcessor extends BaseProcessor {
@@ -31,8 +36,16 @@ export class MediaProcessor extends BaseProcessor {
     dataSource: DataSource,
     chainService: ChainService,
     tenantCapService: TenantCapService,
+    queueMetrics: QueueMetricsCollector,
+    queueReconcileCollector: QueueReconcileCollector,
   ) {
-    super(dataSource, chainService, tenantCapService);
+    super(
+      dataSource,
+      chainService,
+      tenantCapService,
+      queueMetrics,
+      queueReconcileCollector,
+    );
   }
 
   protected async process(job: Bulljob): Promise<void> {

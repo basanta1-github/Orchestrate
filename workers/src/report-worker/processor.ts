@@ -10,7 +10,12 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
 import { table } from "console";
-import { ChainService, TenantCapService } from "@jobque/shared";
+import {
+  ChainService,
+  QueueMetricsCollector,
+  QueueReconcileCollector,
+  TenantCapService,
+} from "@jobque/shared";
 
 const MAX_ROWS = 1000;
 const MAX_FILE_SIZE_MB = 20;
@@ -22,8 +27,16 @@ export class ReportProcessor extends BaseProcessor {
     @InjectDataSource() dataSource: DataSource,
     chainService: ChainService,
     tenantCapService: TenantCapService,
+    queueMetrics: QueueMetricsCollector,
+    queueReconcileCollector: QueueReconcileCollector,
   ) {
-    super(dataSource, chainService, tenantCapService);
+    super(
+      dataSource,
+      chainService,
+      tenantCapService,
+      queueMetrics,
+      queueReconcileCollector,
+    );
   }
   protected async process(job: BullJob): Promise<void> {
     const payload = job.data.metadata;

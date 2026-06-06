@@ -1,11 +1,16 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BaseWorker } from "../base-worker/base.worker";
 import { ReportProcessor } from "./processor";
+import { QueueReconcileCollector, workerRegistryService } from "@jobque/shared";
 
 @Injectable()
 export class ReportWorker extends BaseWorker implements OnModuleInit {
-  constructor(private readonly reportProcessor: ReportProcessor) {
-    super("report-jobs");
+  constructor(
+    private readonly reportProcessor: ReportProcessor,
+    workerRegistery: workerRegistryService,
+    queueReconcileCollector: QueueReconcileCollector,
+  ) {
+    super("report-jobs", workerRegistery, queueReconcileCollector);
   }
 
   async onModuleInit() {
