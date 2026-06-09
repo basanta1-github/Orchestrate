@@ -30,7 +30,19 @@ export abstract class BaseProcessor {
   ) {}
 
   async execute(job: BullJob): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
+    // // DEMO ONLY: artificially slow down each job so you can visually observe
+    // // band promotion, autoscaling, tenant-cap staging, etc.
+    // // Set JOB_DEMO_DELAY_MS in the worker's .env (e.g. 10000 for 10s).
+    // // Leave it unset / 0 in production.
+    // const demoDelayMs = parseInt(process.env.JOB_DEMO_DELAY_MS ?? "0", 10);
+    const demoDelayMs = 10000;
+    if (demoDelayMs > 0) {
+      this.logger.warn(
+        `DEMO delay: holding job ${job.data.jobId} for ${demoDelayMs}ms`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, demoDelayMs));
+    }
+    // await new Promise((resolve) => setTimeout(resolve, 10_000));
     const jobRepo: Repository<Job> = this.dataSource.getRepository(Job);
     const JobAttemptRepo: Repository<JobAttempt> =
       this.dataSource.getRepository(JobAttempt);
@@ -146,7 +158,7 @@ export abstract class BaseProcessor {
       await this.process(job);
       jobSucceded = true;
       const now = new Date();
-      const durationSeconds = (Date.now() - executeStart) / 100;
+      const durationSeconds = (Date.now() - executeStart) / 1000;
 
       await JobAttemptRepo.update(
         { id: attempt.id },
@@ -228,12 +240,14 @@ export abstract class BaseProcessor {
           { id: job.data.jobId },
           { status: JobStatus.FAILED, completedAt: now },
         );
+        const reason = this.classifyFailure(err);
 
         this.queueMetrics.recordJobFailed(
           job.queueName,
           jobType,
           priority,
           durationSeconds,
+          reason,
         );
 
         /**
@@ -289,8 +303,29 @@ export abstract class BaseProcessor {
         );
       }
 
-      this.logger.log(`Job ${job.data.jobId} processed after 10s delay`);
+      // this.logger.log(`Job ${job.data.jobId} processed after 10s delay`);
+      this.logger.log(`Job ${job.data.jobId} processed`);
     }
+  }
+
+  /**
+   * Classify the failure reason for metrics reporting.
+   * maps on arbitary error to a SMALL, bounded set of reasons so the
+   * 'reason' label on jobque_jobs_failed_total never explodes cardinality
+   */
+  private classifyFailure(err: Error): string {
+    const msg = `${err.name} ${err.message}`.toLowerCase();
+    if (msg.includes("timeout") || msg.includes("etimedout")) return "timeout";
+    if (
+      msg.includes("econnrefused") ||
+      msg.includes("enotfound") ||
+      msg.includes("network") ||
+      msg.includes("socket")
+    )
+      return "downstream";
+    if (msg.includes("validation") || msg.includes("invalid"))
+      return "validation";
+    return "unknown";
   }
 
   /**

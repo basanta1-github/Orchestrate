@@ -37,8 +37,8 @@ export class MetricService implements OnModuleInit {
 
   readonly jobFailed = new Counter({
     name: "jobque_jobs_failed_total",
-    help: "Total jobs that permanently failed(all retries exhausted",
-    labelNames: ["queue", "job_type", "priority"] as const,
+    help: "Total jobs that permanently failed (all retries exhausted)",
+    labelNames: ["queue", "job_type", "priority", "reason"] as const,
     registers: [this.registry],
   });
 
@@ -66,7 +66,7 @@ export class MetricService implements OnModuleInit {
   readonly jobDuration = new Histogram({
     name: "jobque_job_duration_seconds",
     help: "End-to-end job processing time in seconds",
-    labelNames: ["queue", "job_type", "priority", "status"] as const,
+    labelNames: ["queue", "job_type", "status"] as const,
     buckets: [0.1, 0.5, 1, 2, 5, 10, 30, 60, 120, 300],
     registers: [this.registry],
   });
@@ -74,7 +74,7 @@ export class MetricService implements OnModuleInit {
   readonly jobWaitTime = new Histogram({
     name: "jobque_job_wait_seconds",
     help: "Time a job waited in queue before processing started",
-    labelNames: ["queue", "job_type", "priority"] as const,
+    labelNames: ["queue", "job_type"] as const,
     buckets: [0.1, 0.5, 1, 5, 10, 30, 60, 120, 300, 600],
     registers: [this.registry],
   });
@@ -88,28 +88,23 @@ export class MetricService implements OnModuleInit {
     registers: [this.registry],
   });
 
-  readonly workerCpu = new Gauge({
-    name: "jobque_worker_cpu_percent",
-    help: "Worker process CPU usage percentage",
-    labelNames: ["pid"] as const,
-    registers: [this.registry],
-  });
-
-  readonly workerMemory = new Gauge({
-    name: "jobque_worker_memory_mb",
-    help: "Worker process RSS memory usage in megabytes",
-    labelNames: ["pid"] as const,
-    registers: [this.registry],
-  });
-
   /**
-   * Heartbeat gauge — stores Unix epoch seconds of last check-in.
-   * Alert rule: time() - jobque_worker_heartbeat_timestamp > 60 → WorkerDead
+   * Per-process liveness heartbeat (gauge)- Unix epoch seconds of last check-in
+   * one series per process; identity comes from service/worker_type/instance
+   * default labels (set in onModuleInit). Primary liveness is Prometheus "up";
+   * this is a secondary "Node evenbt loop is still running" signal.
+   *
+   * CPU and memorty are intentionally Not Defiuned here - they come free from
+   * collectDefauleMetrics()
+   *
+   * jobque_nodejs_process_resident_memory_bytes (RSS, bytes)
+   * jobque_nodejs_process_cpu_seconds_total (CPU, user rate())
+   * jobque_nodejs_event_loop_lag_seconds (saturation)
    */
+
   readonly workerHeartbeat = new Gauge({
     name: "jobque_worker_heartbeat_timestamp",
-    help: "Unix timestamp of last worker heartbeat. Alert if time()-this > 60.",
-    labelNames: ["queue", "pid"] as const,
+    help: "Unix timestamp of last worker heartbeat (per process).",
     registers: [this.registry],
   });
 
@@ -186,7 +181,20 @@ export class MetricService implements OnModuleInit {
   });
 
   onModuleInit(): void {
-    // default node.js process metrics: heap, GC, event Loop lag, CPU, memory
+    // identify labels applied to every metric in this registery - including the
+    // default node.js process metrics: GC, event-loop log, CPU, memory
+    // this makes eachh scraped process self-describiing
+    // "instance" is intentionally not set here: Prometheus assigns it
+    // from the scrape target address
+
+    this.registry.setDefaultLabels({
+      service:
+        process.env.SERVICE_NAME ??
+        (process.env.WORKER_TYPE ? "worker" : "api"),
+      worker_type: process.env.WORKER_TYPE ?? "none",
+    });
+
+    // default node.js process Metrics: heap gc event-loop log, CPU, memory
     collectDefaultMetrics({
       register: this.registry,
       prefix: "jobque_nodejs_",

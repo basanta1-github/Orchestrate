@@ -1,12 +1,9 @@
 import { Controller, Get, Res, Logger, Query } from "@nestjs/common";
 import { Response } from "express";
 import { MetricService } from "./metrics.service";
-import { QueueService } from "../queue/queue.service";
-import { TenantCapService } from "../scaling";
 import { QueueMetricsCollector } from "./queue-metrics.collector";
 import { WorkerHealthCollector } from "./worker-health.collector";
 import { TenantMetricsCollector } from "./tenant-metrics.collector";
-import { Timestamp } from "typeorm";
 import { QueueReconcileCollector } from "./queueReconcileCollector";
 
 /**
@@ -65,7 +62,7 @@ export class MetricsController {
       await this.metricService.getMetrics(); // verify collection works
       res.status(200).json({
         status: "healthy",
-        Timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
         uptime_seconds: Math.floor(process.uptime()),
         memory_mb: Math.round(process.memoryUsage().rss / 1024 / 1024),
         pid: process.pid,
@@ -75,7 +72,7 @@ export class MetricsController {
       res.status(503).json({
         status: "unhealthy",
         error: error instanceof Error ? error.message : String(error),
-        Timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       });
     }
   }
@@ -93,9 +90,8 @@ export class MetricsController {
       await this.queueMetrics.refreshNow();
     }
     const snapshot = await this.queueMetrics.getQueueSnapshot();
-    console.log(snapshot, "queue snapshot");
     res.status(200).json({
-      Timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
       queues: snapshot,
     });
   }

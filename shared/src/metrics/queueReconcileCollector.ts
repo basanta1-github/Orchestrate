@@ -25,7 +25,7 @@ export class QueueReconcileCollector {
   }
 
   async incrementSubmitted(queueName: string): Promise<void> {
-    await this.redis.hincrby(this.totalsKey(queueName), "submitted-total", 1);
+    await this.redis.hincrby(this.totalsKey(queueName), "submitted_total", 1);
   }
 
   async incrementStaged(queueName: string): Promise<void> {

@@ -14,7 +14,10 @@ export interface batchJobItem {
   metadata?: Record<string, any>;
   retries?: number;
   delayMs?: number;
-  idempotencyKey: string;
+  // Optional: client-supplied key for true cross-request idempotency.
+  // When omitted we fall back to the DB job id so BullMQ always gets a
+  // stable STRING id (never an auto-incremented numeric id).
+  idempotencyKey?: string;
 }
 
 export interface BatchJobDto {
@@ -133,7 +136,7 @@ export class BatchJobService {
           retries: saved.retries,
           metadata: { ...saved.metadata, batchId, batchKey: item.key },
           delayMs: item.delayMs,
-          idempotencyKey: item.idempotencyKey,
+          idempotencyKey: item.idempotencyKey ?? saved.id,
           queueName: resolveQueueName(saved.type),
         });
         this.logger.log(

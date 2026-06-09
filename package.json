@@ -1,0 +1,33 @@
+{
+  "name": "orchestrate",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Distributed Job Queue & Worker System (Orchestrate / JobQue)",
+  "scripts": {
+    "build:shared": "cd shared && npm install && npm run pack",
+    "build:workers": "cd workers && npm install && npm run pack",
+    "build:api": "cd api && npm install && npm run build",
+    "build:all": "npm run build:shared && npm run build:workers && npm run build:api",
+    "dev:api": "cd api && npm run start:dev",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api",
+    "verify:m1": "node scripts/verify-m1.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/basanta1-github/Orchestrate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/basanta1-github/Orchestrate/issues"
+  },
+  "homepage": "https://github.com/basanta1-github/Orchestrate#readme"
+}

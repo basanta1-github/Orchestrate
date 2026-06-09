@@ -81,7 +81,7 @@ export class TenantCapService implements OnModuleInit {
      */
 
     if (current === 1) {
-      await this.redis.expire(key, 60); // safety TTL
+      await this.redis.expire(key, 300); // safety TTL //60
     }
 
     this.logger.warn(

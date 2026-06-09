@@ -7,15 +7,16 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./rules.yml:/etc/prometheus/rules.yml:ro
       - prometheus_data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=30d"
       - "--web.enable-lifecycle"
-      - "--web.enable-admin-api"
+
     networks:
       - jobque_default
     healthcheck:
@@ -31,14 +32,14 @@ services:
     ports:
       - "3002:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=jobque2024
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
     networks:
@@ -56,20 +57,19 @@ services:
     ports:
       - "9093:9093"
     volumes:
-      - ./secrets/slack_webhook:/run/secrets/slack_webhook:ro
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ../secrets/slack_webhook:/run/secrets/slack_webhook:ro
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       # - ./monitoring/start-alertmanager.sh:/start.sh:ro
       - alertmanager_data:/alertmanager
     # entrypoint: ["/bin/sh", "/start.sh"]
     command: 
-    # ["/start-alertmanager.sh"]
       - "--config.file=/etc/alertmanager/alertmanager.yml"
-      # - "--config.expand-env"
+      - "--config.expand-env"
       - "--storage.path=/alertmanager"
       - "--web.external-url=http://localhost:9093"
     environment:
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
+        - SMTP_USER=${SMTP_USER}
+        - SMTP_PASS=${SMTP_PASS}
     networks:
       - jobque_default
 
@@ -80,5 +80,6 @@ volumes:
 
 networks:
   jobque_default:
-    driver: bridge
-    # external: true
+    # driver: bridge
+    external: true
+    name: jobque_default

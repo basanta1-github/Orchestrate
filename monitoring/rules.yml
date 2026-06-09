@@ -1,0 +1,56 @@
+groups:
+  - name: jobque_recording_rules
+    interval: 15s
+    rules:
+      # Job failure ratio per queue
+      - record: job:failure_ratio:5m
+        expr: |
+          sum by (queue) (rate(jobque_jobs_failed_total[5m]))
+          /
+          (
+            sum by (queue) (rate(jobque_jobs_completed_total[5m]))
+            + sum by (queue) (rate(jobque_jobs_failed_total[5m]))
+            + 1e-9
+          )
+
+      # Job retry ratio per queue
+      - record: job:retry_ratio:5m
+        expr: |
+          sum by (queue) (rate(jobque_job_retry_attempts_total[5m]))
+          /
+          (
+            sum by (queue) (rate(jobque_jobs_completed_total[5m]))
+            + sum by (queue) (rate(jobque_jobs_failed_total[5m]))
+            + 1e-9
+          )
+
+      # Job processing duration p95 per queue
+      - record: job:duration_seconds:p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, queue) (rate(jobque_job_duration_seconds_bucket[5m]))
+          )
+
+      # Job wait time p95 per queue
+      - record: job:wait_seconds:p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, queue) (rate(jobque_job_wait_seconds_bucket[5m]))
+          )
+
+      # HTTP 5xx error ratio per route
+      - record: http:error_ratio:5m
+        expr: |
+          sum by (route) (rate(jobque_http_requests_total{status_code=~"5.."}[5m]))
+          /
+          (sum by (route) (rate(jobque_http_requests_total[5m])) + 1e-9)
+
+      # HTTP latency p95 per route
+      - record: http:duration_seconds:p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, route) (rate(jobque_http_request_duration_seconds_bucket[5m]))
+          )

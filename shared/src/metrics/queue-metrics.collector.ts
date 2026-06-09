@@ -6,7 +6,6 @@ import {
 } from "@nestjs/common";
 import { Queue } from "bullmq";
 import { MetricService } from "./metrics.service";
-import { QueueService } from "../queue/queue.service";
 
 /**
  * QueueMetricsCollector
@@ -30,6 +29,19 @@ export class QueueMetricsCollector implements OnModuleInit, OnModuleDestroy {
   private intervalHandle: NodeJS.Timeout | null = null;
   private queues: Map<string, Queue> = new Map();
 
+  // cached DLQ handles - created once and reused ( no per poll connection churn)
+  private dlqQueues: Map<string, Queue> = new Map();
+  private readonly connection = {
+    host: process.env.REDIS_HOST || "redis",
+    port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
+  };
+  // only the designated owner polls depth. Default: the API process
+  // (workers set WORKER_TYPE). override with AUEUE_DEPTH_POLLER=true
+
+  private readonly isDepthPoller =
+    process.env.QUEUE_DEPTH_POLLER === "true" ||
+    process.env.WORKER_TYPE === undefined;
+
   // snapshot cache for /metrics/queues endpoint
   private queueSnapshot: Record<
     string,
@@ -42,17 +54,23 @@ export class QueueMetricsCollector implements OnModuleInit, OnModuleDestroy {
     }
   > = {};
 
-  constructor(
-    private readonly metricsService: MetricService,
-    // private readonly queueService: QueueService,
-  ) {}
+  constructor(private readonly metricsService: MetricService) {}
 
   setQueues(queues: Map<string, Queue>): void {
     this.queues = queues;
   }
-
+  registerQueues(queues: Map<string, Queue>): void {
+    this.queues = queues;
+    this.logger.log(`register queues count = ${this.queues.size}`);
+  }
   onModuleInit(): void {
-    // this.queues = this.queueService.getQueues();
+    if (!this.isDepthPoller) {
+      this.logger.log(
+        "QueueMetricsCollector: depth polling disabled for this process " +
+          "(event recording still active)",
+      );
+      return;
+    }
     this.intervalHandle = setInterval(() => this.poll(), this.POLL_INTERVAL_MS);
     this.logger
       .log(`QueueMetricsCollector started - polling ${this.queues.size} queue(s) 
@@ -62,16 +80,23 @@ export class QueueMetricsCollector implements OnModuleInit, OnModuleDestroy {
       this.logger.error("initial queue poll failed", err),
     );
   }
-  onModuleDestroy(): void {
+  async onModuleDestroy(): Promise<void> {
     if (this.intervalHandle) clearInterval(this.intervalHandle);
+    await Promise.all(
+      [...this.dlqQueues.values()].map((q) => q.close().catch(() => undefined)),
+    );
+  }
+
+  private getDlqQueue(queueName: string): Queue {
+    let dlq = this.dlqQueues.get(queueName);
+    if (!dlq) {
+      dlq = new Queue(`${queueName}_DLQ`, { connection: this.connection });
+      this.dlqQueues.set(queueName, dlq);
+    }
+    return dlq;
   }
 
   private async poll(): Promise<void> {
-    const connection = {
-      host: process.env.REDIS_HOST || "redis",
-      port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
-    };
-
     for (const [queueName, queue] of this.queues.entries()) {
       try {
         const [waiting, active, delayed, prioritized] = await Promise.all([
@@ -101,16 +126,27 @@ export class QueueMetricsCollector implements OnModuleInit, OnModuleDestroy {
         this.metricsService.workerActiveJobs.set({ queue: queueName }, active);
 
         // dlq depth - queue may not exist on first run
+        // dlq depth via a cached, reused Queue handle (no churn)
         let dlqCount = 0;
         try {
-          const dlq = new Queue(`${queueName}_DLQ`, { connection });
-          dlqCount = await dlq.getFailedCount();
+          const counts = await this.getDlqQueue(queueName).getJobCounts(
+            "failed",
+            "delayed",
+            "waiting",
+            "prioritized",
+          );
+          dlqCount =
+            (counts.waiting ?? 0) +
+            (counts.delayed ?? 0) +
+            (counts.prioritized ?? 0) +
+            (counts.failed ?? 0);
           this.metricsService.dlqDepth.set({ queue: queueName }, dlqCount);
-          await dlq.close();
-        } catch (error) {
-          // dlq doesnot exist yet - safe to ignore
+        } catch (err) {
+          this.logger.error(
+            `DLQ depth read failed for "${queueName}"`,
+            err instanceof Error ? err.message : String(err),
+          );
         }
-
         this.queueSnapshot[queueName] = {
           waiting,
           active,
@@ -144,13 +180,12 @@ export class QueueMetricsCollector implements OnModuleInit, OnModuleDestroy {
       {
         queue: queueName,
         job_type: jobType,
-        priority,
         status: "completed",
       },
       durationSeconds,
     );
     this.metricsService.jobWaitTime.observe(
-      { queue: queueName, job_type: jobType, priority },
+      { queue: queueName, job_type: jobType },
       waitSeconds,
     );
   }
@@ -159,14 +194,16 @@ export class QueueMetricsCollector implements OnModuleInit, OnModuleDestroy {
     jobType: string,
     priority: string,
     durationSeconds: number,
+    reason: string = "unknown",
   ): void {
     this.metricsService.jobFailed.inc({
       queue: queueName,
       job_type: jobType,
       priority,
+      reason,
     });
     this.metricsService.jobDuration.observe(
-      { queue: queueName, job_type: jobType, priority, status: "failed" },
+      { queue: queueName, job_type: jobType, status: "failed" },
       durationSeconds,
     );
   }
@@ -205,17 +242,8 @@ export class QueueMetricsCollector implements OnModuleInit, OnModuleDestroy {
   > {
     return { ...this.queueSnapshot };
   }
-  registerQueues(queues: Map<string, Queue>): void {
-    this.queues = queues;
-    this.logger.log(`register queues count = ${this.queues.size}`);
-  }
+
   async refreshNow(): Promise<void> {
     await this.poll();
-    this.logger.debug("refreshNow called");
-    this.logger.debug(`registered queues count = ${this.queues.size}`);
-
-    for (const [name, queue] of this.queues.entries()) {
-      this.logger.debug(`refreshing queue ${name}`);
-    }
   }
 }

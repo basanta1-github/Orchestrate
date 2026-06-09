@@ -24,3 +24,7 @@ RUN npx tsc
 # CMD ["node", "dist/email/worker.js"]
 
 # CMD ["tail", "-f", "/dev/null"]
+
+#Worker now serves /metrics over HTTP for prometheus
+
+EXPOSE 3001

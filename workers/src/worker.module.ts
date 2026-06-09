@@ -4,7 +4,7 @@ import {
   // ChainService,
   DatabaseModule,
   JobsModule,
-  // MetricsModule,
+  MetricsModule,
   // JobsService,
   QueueModule,
   workerRegistryService,
@@ -41,7 +41,7 @@ import { ETLService } from "./etl-worker/service";
  * do not add job service or chain service they come from job module
  */
 @Module({
-  imports: [DatabaseModule, QueueModule, JobsModule],
+  imports: [DatabaseModule, QueueModule, JobsModule, MetricsModule],
   providers: [
     MediaWorker,
     MLWorker,

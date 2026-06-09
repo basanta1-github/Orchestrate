@@ -2,24 +2,21 @@ import { Queue, Worker, Job as BullJob, KeepJobs, QueueEvents } from "bullmq";
 import { BaseProcessor } from "./base.processor";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import Redis from "ioredis";
-import {
-  TenantCapService,
-  workerRegistryService,
-  QueueReconcileCollector,
-} from "@jobque/shared";
+import { workerRegistryService, QueueReconcileCollector } from "@jobque/shared";
 
 @Injectable()
 export abstract class BaseWorker {
   protected queue!: Queue;
   protected worker!: Worker;
   protected queueEvents!: QueueEvents;
+  protected dlqQueue!: Queue;
   protected logger = new Logger(BaseWorker.name);
 
   // redis client for rate limiting
-  private redis = new Redis({
-    host: process.env.REDIS_HOST || "redis",
-    port: Number(process.env.REDIS_PORT || 6379),
-  });
+  // private connection = new Redis({
+  //   host: process.env.REDIS_HOST || "redis",
+  //   port: Number(process.env.REDIS_PORT || 6379),
+  // });
 
   // in-memory counter for jobs per minute
   // private jobTimeStamps: number[] = [];
@@ -41,6 +38,13 @@ export abstract class BaseWorker {
 
     // queue (producer side)
     this.queue = new Queue(this.queueName, { connection });
+
+    // dead-letter queue handle - created once and reused (no per event churn,
+    /// and uses the conectionwith proper host/port defaults)
+
+    this.dlqQueue = new Queue(`${this.queueName}_DLQ`, {
+      connection,
+    });
 
     //worker (consumer side)
     // const processor = this.getProcessor();
@@ -120,14 +124,7 @@ export abstract class BaseWorker {
       // this.queueReconcileCollector.markFailed(this.queueName);
       // final faliure move to DLQ
       if (job.attemptsMade >= maxAttempts) {
-        const dlq = new Queue(`${this.queueName}_DLQ`, {
-          connection: {
-            host: process.env.REDIS_HOST,
-            port: Number(process.env.REDIS_PORT),
-          },
-        });
-
-        await dlq.add(job.name, job.data, {
+        await this.dlqQueue.add(job.name, job.data, {
           removeOnComplete: false,
           removeOnFail: false,
         });

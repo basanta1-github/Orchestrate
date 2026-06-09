@@ -3,145 +3,233 @@
   "uid": "jobque-overview",
   "tags": ["jobque", "monitoring"],
   "timezone": "browser",
+  "schemaVersion": 39,
   "refresh": "30s",
   "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {}
+      },
+      {
+        "name": "queue",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "query": { "query": "label_values(jobque_queue_depth, queue)", "refId": "queue" },
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "worker_type",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "query": { "query": "label_values(jobque_worker_heartbeat_timestamp, worker_type)", "refId": "worker_type" },
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
   "panels": [
     {
       "id": 1,
       "title": "Queue Depth — Waiting Jobs",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "targets": [{ "expr": "jobque_queue_depth{state=\"waiting\"}", "legendFormat": "{{queue}}" }],
+      "targets": [{ "expr": "jobque_queue_depth{state=\"waiting\", queue=~\"$queue\"}", "legendFormat": "{{queue}}" }],
       "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green" }, { "color": "yellow", "value": 100 }, { "color": "red", "value": 500 }] } } }
     },
     {
       "id": 2,
       "title": "Active Jobs Being Processed",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "targets": [{ "expr": "jobque_queue_depth{state=\"active\"}", "legendFormat": "{{queue}}" }]
+      "targets": [{ "expr": "jobque_queue_depth{state=\"active\", queue=~\"$queue\"}", "legendFormat": "{{queue}}" }]
     },
     {
       "id": 3,
-      "title": "Jobs Completed / sec",
+      "title": "Jobs Completed / sec (per job type)",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "targets": [{ "expr": "rate(jobque_jobs_completed_total[5m])", "legendFormat": "{{queue}} / {{job_type}}" }]
+      "targets": [{ "expr": "sum by (queue, job_type) (rate(jobque_jobs_completed_total{queue=~\"$queue\"}[5m]))", "legendFormat": "{{queue}} / {{job_type}}" }]
     },
     {
       "id": 4,
-      "title": "Jobs Failed / sec",
+      "title": "Jobs Failed / sec (by reason)",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "targets": [{ "expr": "rate(jobque_jobs_failed_total[5m])", "legendFormat": "{{queue}} / {{job_type}}" }],
+      "targets": [{ "expr": "sum by (queue, job_type, reason) (rate(jobque_jobs_failed_total{queue=~\"$queue\"}[5m]))", "legendFormat": "{{queue}} / {{job_type}} ({{reason}})" }],
       "fieldConfig": { "defaults": { "color": { "fixedColor": "red", "mode": "fixed" } } }
     },
     {
       "id": 5,
       "title": "Job Processing Duration — p50 / p95 / p99 (seconds)",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
       "targets": [
-        { "expr": "histogram_quantile(0.50, rate(jobque_job_duration_seconds_bucket[5m]))", "legendFormat": "p50 {{queue}}/{{job_type}}" },
-        { "expr": "histogram_quantile(0.95, rate(jobque_job_duration_seconds_bucket[5m]))", "legendFormat": "p95 {{queue}}/{{job_type}}" },
-        { "expr": "histogram_quantile(0.99, rate(jobque_job_duration_seconds_bucket[5m]))", "legendFormat": "p99 {{queue}}/{{job_type}}" }
-      ]
+        { "expr": "histogram_quantile(0.50, sum by (le, queue) (rate(jobque_job_duration_seconds_bucket{queue=~\"$queue\"}[5m])))", "legendFormat": "p50 {{queue}}" },
+        { "expr": "histogram_quantile(0.95, sum by (le, queue) (rate(jobque_job_duration_seconds_bucket{queue=~\"$queue\"}[5m])))", "legendFormat": "p95 {{queue}}" },
+        { "expr": "histogram_quantile(0.99, sum by (le, queue) (rate(jobque_job_duration_seconds_bucket{queue=~\"$queue\"}[5m])))", "legendFormat": "p99 {{queue}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
     },
     {
       "id": 6,
       "title": "Job Wait Time p95 (seconds)",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-      "targets": [{ "expr": "histogram_quantile(0.95, rate(jobque_job_wait_seconds_bucket[5m]))", "legendFormat": "p95 {{queue}}" }]
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, queue) (rate(jobque_job_wait_seconds_bucket{queue=~\"$queue\"}[5m])))", "legendFormat": "p95 {{queue}}" }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
     },
     {
       "id": 7,
       "title": "Worker Count per Queue",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
-      "targets": [{ "expr": "jobque_worker_count", "legendFormat": "{{queue}}", "instant": true }]
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 24 },
+      "targets": [{ "expr": "jobque_worker_count{queue=~\"$queue\"}", "legendFormat": "{{queue}}", "instant": true }]
+    },
+    {
+      "id": 19,
+      "title": "Workers Up (up == 1)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 24 },
+      "targets": [{ "expr": "up{job=\"jobque-worker\"}", "legendFormat": "{{instance}}", "instant": true }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "red" }, { "color": "green", "value": 1 }] } } }
     },
     {
       "id": 8,
       "title": "Worker Memory RSS (MB)",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
-      "targets": [{ "expr": "jobque_worker_memory_mb", "legendFormat": "PID {{pid}}" }],
-      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green" }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 1500 }] } } }
+      "targets": [{ "expr": "jobque_nodejs_process_resident_memory_bytes{service=\"worker\", worker_type=~\"$worker_type\"} / 1024 / 1024", "legendFormat": "{{worker_type}} {{instance}}" }],
+      "fieldConfig": { "defaults": { "unit": "decmbytes", "thresholds": { "steps": [{ "color": "green" }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 1500 }] } } }
     },
     {
       "id": 9,
       "title": "Worker CPU %",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
-      "targets": [{ "expr": "jobque_worker_cpu_percent", "legendFormat": "PID {{pid}}" }]
+      "targets": [{ "expr": "rate(jobque_nodejs_process_cpu_seconds_total{service=\"worker\", worker_type=~\"$worker_type\"}[5m]) * 100", "legendFormat": "{{worker_type}} {{instance}}" }],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "id": 20,
+      "title": "Worker Heartbeat Age (s)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "targets": [{ "expr": "time() - jobque_worker_heartbeat_timestamp{worker_type=~\"$worker_type\"}", "legendFormat": "{{worker_type}} {{instance}}" }],
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "steps": [{ "color": "green" }, { "color": "red", "value": 60 }] } } }
+    },
+    {
+      "id": 21,
+      "title": "Event Loop Lag p99 (ms)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "targets": [{ "expr": "jobque_nodejs_nodejs_eventloop_lag_p99_seconds{worker_type=~\"$worker_type\"} * 1000", "legendFormat": "{{worker_type}} {{instance}}" }],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
     },
     {
       "id": 10,
       "title": "DLQ Depth",
       "type": "stat",
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 40 },
-      "targets": [{ "expr": "jobque_dlq_depth", "legendFormat": "{{queue}} DLQ", "instant": true }],
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 48 },
+      "targets": [{ "expr": "jobque_dlq_depth{queue=~\"$queue\"}", "legendFormat": "{{queue}} DLQ", "instant": true }],
       "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green" }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 50 }] } } }
+    },
+    {
+      "id": 22,
+      "title": "DLQ Moves / sec",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 48 },
+      "targets": [{ "expr": "sum by (queue) (rate(jobque_dlq_jobs_total{queue=~\"$queue\"}[5m]))", "legendFormat": "{{queue}}" }]
+    },
+    {
+      "id": 23,
+      "title": "Retry Rate / sec",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 48 },
+      "targets": [{ "expr": "sum by (queue) (rate(jobque_job_retry_attempts_total{queue=~\"$queue\"}[5m]))", "legendFormat": "{{queue}}" }]
     },
     {
       "id": 11,
       "title": "Autoscaler Scale Events / sec",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 54 },
       "targets": [
-        { "expr": "rate(jobque_autoscaler_scale_up_total[5m])", "legendFormat": "UP {{queue}}" },
-        { "expr": "rate(jobque_autoscaler_scale_down_total[5m])", "legendFormat": "DOWN {{queue}}" }
+        { "expr": "rate(jobque_autoscaler_scale_up_total{queue=~\"$queue\"}[5m])", "legendFormat": "UP {{queue}}" },
+        { "expr": "rate(jobque_autoscaler_scale_down_total{queue=~\"$queue\"}[5m])", "legendFormat": "DOWN {{queue}}" }
       ]
-    },
-    {
-      "id": 12,
-      "title": "Tenant Inflight Jobs",
-      "type": "table",
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 40 },
-      "targets": [{ "expr": "jobque_tenant_inflight_jobs", "legendFormat": "{{tenant_id}}", "instant": true }]
     },
     {
       "id": 13,
       "title": "Band Promotions / sec",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 46 },
-      "targets": [{ "expr": "rate(jobque_band_promotions_total[5m])", "legendFormat": "{{queue}}" }]
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 54 },
+      "targets": [{ "expr": "rate(jobque_band_promotions_total{queue=~\"$queue\"}[5m])", "legendFormat": "{{queue}}" }]
     },
     {
-      "id": 14,
-      "title": "HTTP Request Rate by Route",
-      "type": "timeseries",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 46 },
-      "targets": [{ "expr": "rate(jobque_http_requests_total[5m])", "legendFormat": "{{method}} {{route}} {{status_code}}" }]
-    },
-    {
-      "id": 15,
-      "title": "Tenant Cap Hits / sec",
-      "type": "timeseries",
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 52 },
-      "targets": [{ "expr": "rate(jobque_tenant_cap_hit_total[5m])", "legendFormat": "{{tenant_id}}" }]
+      "id": 12,
+      "title": "Tenant Inflight Jobs",
+      "type": "table",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 60 },
+      "targets": [{ "expr": "topk(20, jobque_tenant_inflight_jobs)", "legendFormat": "{{tenant_id}}", "instant": true }]
     },
     {
       "id": 16,
       "title": "Tenant Staged Jobs",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 52 },
-      "targets": [{ "expr": "jobque_tenant_staged_jobs", "legendFormat": "{{tenant_id}}" }]
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 60 },
+      "targets": [{ "expr": "topk(20, jobque_tenant_staged_jobs)", "legendFormat": "{{tenant_id}}" }]
     },
     {
-      "id": 17,
-      "title": "Node.js Event Loop Lag (ms)",
+      "id": 15,
+      "title": "Tenant Cap Hits / sec",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 58 },
-      "targets": [{ "expr": "rate(jobque_nodejs_eventloop_lag_seconds_sum[5m]) * 1000", "legendFormat": "event loop lag" }]
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 60 },
+      "targets": [{ "expr": "topk(20, rate(jobque_tenant_cap_hit_total[5m]))", "legendFormat": "{{tenant_id}}" }]
     },
     {
-      "id": 18,
-      "title": "Node.js Heap Used (MB)",
+      "id": 14,
+      "title": "HTTP Request Rate by Route",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 58 },
-      "targets": [{ "expr": "jobque_nodejs_heap_size_used_bytes / 1024 / 1024", "legendFormat": "heap used MB" }]
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 66 },
+      "targets": [{ "expr": "sum by (method, route, status_code) (rate(jobque_http_requests_total[5m]))", "legendFormat": "{{method}} {{route}} {{status_code}}" }]
+    },
+    {
+      "id": 24,
+      "title": "API Latency p95 (s)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 66 },
+      "targets": [{ "expr": "http:duration_seconds:p95:5m", "legendFormat": "p95 {{route}}" }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
     }
   ]
 }

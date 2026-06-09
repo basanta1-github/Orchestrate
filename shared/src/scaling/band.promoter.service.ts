@@ -106,9 +106,8 @@ export class BandPromoterService implements OnModuleInit {
       const waitedMs = now - job.timestamp;
       if (waitedMs < this.PROMOTION_THRESHHOLD_MS) continue;
 
-      //promote: remove + re-add with high priority.
-      await this.promoteJob(queue, job);
-      promoted++;
+      const ok = await this.promoteJob(queue, job); // return boolean
+      if (ok) promoted++;
     }
     if (promoted > 0) {
       this.logger.log(
@@ -125,30 +124,37 @@ export class BandPromoterService implements OnModuleInit {
    * Re-adds a job with priority =1 (high band).
    * Preserves all original job data and options except priority
    */
-  private async promoteJob(queue: Queue, job: BullJob): Promise<void> {
+  private async promoteJob(queue: Queue, job: BullJob): Promise<boolean> {
     try {
       // remove from its current position
-      await job.remove();
+      await job.changePriority({ priority: this.HIGH_BAND_PRIORITY });
 
-      // Re-add with high band priority. keep original attempts, backoff, etc
-      await queue.add(job.name, job.data, {
-        ...job.opts,
-        priority: this.HIGH_BAND_PRIORITY,
-        // preserve the original jobId so idempotency keys still work.
-        jobId: job.opts.jobId ?? job.id,
-        // no delay - the job has already waited long enough.
-        delay: 0,
-      });
+      // we can do or change priotity fromn above no need to remove and re-add the job, which is more efficient and preserves the original jobId and other metadata.
+
+      // // Re-add with high band priority. keep original attempts, backoff, etc
+      // await queue.add(job.name, job.data, {
+      //   ...job.opts,
+      //   priority: this.HIGH_BAND_PRIORITY,
+      //   // preserve the original jobId so idempotency keys still work.
+      //   jobId: job.opts.jobId ?? job.id,
+      //   // no delay - the job has already waited long enough.
+      //   delay: 0,
+      // });
 
       this.logger.debug(
         `Promoted job${job.id} (DBJob=${job.data.jobId} from priority ${job.opts.priority ?? 20} -> ${this.HIGH_BAND_PRIORITY} after ${Math.round((Date.now() - job.timestamp) / 1000)}s wait)`,
       );
+      return true;
     } catch (err) {
       // non -fatal: if the job was already picked up between getWaiting() and
       // remove(), bullmq will will throw "job not found" error. safe to ignore
+
+      // Only a genuinely-gone job (already active/completed) lands here now,
+      // and crucially nothing is ever deleted, so jobs can no longer be lost.
       this.logger.warn(
         `Could not promote job ${job.id} - it may have been picked up already`,
       );
+      return false;
     }
   }
 }
