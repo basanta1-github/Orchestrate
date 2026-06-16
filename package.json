@@ -6,13 +6,24 @@
   "scripts": {
     "build:shared": "cd shared && npm install && npm run pack",
     "build:workers": "cd workers && npm install && npm run pack",
-    "build:api": "cd api && npm install && npm run build",
+    "build:api": "cd api && npm install && npm run rebuild:all && npm run build",
     "build:all": "npm run build:shared && npm run build:workers && npm run build:api",
     "dev:api": "cd api && npm run start:dev",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api",
-    "verify:m1": "node scripts/verify-m1.js"
+    "docker:ps": "docker compose ps",
+    "docker:monitoring": "docker compose --profile monitoring up -d",
+    "docker:full": "npm run docker:up && npm run docker:monitoring",
+    "verify:m1": "node scripts/verify-m1.js",
+    "verify:m1:health": "node scripts/verify-m1.js --health-only",
+    "k8s:apply": "kubectl apply -k k8s/",
+    "k8s:deploy": "bash scripts/deploy-k8s.sh",
+    "k8s:status": "kubectl get all,hpa -n orchestrate",
+    "verify:monitoring": "bash scripts/verify-monitoring.sh",
+    "verify:k8s": "bash scripts/verify-k8s.sh",
+    "migration:run": "cd shared && npx typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
+    "migration:generate": "cd shared && npx typeorm-ts-node-commonjs migration:generate src/database/migrations/Migration -d src/database/data-source.ts"
   },
   "engines": {
     "node": ">=20.0.0"

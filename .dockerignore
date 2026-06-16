@@ -1,8 +1,43 @@
+# Dependencies & build output
 node_modules
-dist
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+
+# Git & CI
 .git
+.github
+.gitignore
+
+# Secrets & local env
 .env
-Dockerfile
-README.md
+.env.*
+!.env.example
+
+# Logs & coverage
 *.log
-.git
+npm-debug.log*
+coverage
+.nyc_output
+
+# IDE & OS
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Docs & k8s (not needed in image context)
+README.md
+docs
+k8s
+deploy
+scripts
+dashboard/node_modules
+
+# Monitoring bind-mounts only (not baked into api/worker images)
+monitoring
+
+# Docker meta
+**/Dockerfile
+docker-compose*.yml

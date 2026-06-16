@@ -2,37 +2,53 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './errordebugger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import 'reflect-metadata';
 import { JwtAuthGuard, RoleGuard } from '@jobque/shared';
+
 async function bootstrap() {
   try {
-    const app = await NestFactory.create(AppModule, {
-      logger: ['error', 'warn', 'log', 'debug', 'verbose'], // verbose logs
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    });
+
+    app.enableCors({
+      origin: process.env.CORS_ORIGIN?.split(',') ?? true,
+      credentials: true,
     });
 
     app.useGlobalGuards(app.get(JwtAuthGuard), app.get(RoleGuard));
 
-    // global validation
     app.useGlobalPipes(
       new ValidationPipe({
-        whitelist: true, // remove unknown fields
-        forbidNonWhitelisted: true, // throw error on unknown fields
-        transform: true, // convert payload into DTO class
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
         enableDebugMessages: true,
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());
 
+    // Serve dashboard at /dashboard/
+    // Local dev:  <repo>/dashboard  (cwd = api/)
+    // Docker:     /app/dashboard    (cwd = /app/api/)
+    const dashboardPath = join(process.cwd(), '..', 'dashboard');
+    app.useStaticAssets(dashboardPath, {
+      prefix: '/dashboard/',
+      index: ['index.html'],
+    });
+
     const port = process.env.API_PORT || 3001;
     await app.listen(port);
     console.log(`🚀 API running on http://localhost:${port}`);
+    console.log(`📊 Dashboard at http://localhost:${port}/dashboard/`);
   } catch (err) {
     console.error('🔥 BOOTSTRAP ERROR:', err);
-    // If the error has a stack trace, print it
     if (err instanceof Error && err.stack) {
       console.error(err.stack);
     }
-    process.exit(1); // stop the app
+    process.exit(1);
   }
 }
 

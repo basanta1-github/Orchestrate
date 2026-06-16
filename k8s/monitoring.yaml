@@ -1,0 +1,274 @@
+# ── Prometheus config (scrape + rules + alerts) ──────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: orchestrate
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    rule_files:
+      - /etc/prometheus/alerts.yml
+      - /etc/prometheus/rules.yml
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ["alertmanager:9093"]
+    scrape_configs:
+      - job_name: orchestrate-api
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["api:3001"]
+      - job_name: orchestrate-workers
+        metrics_path: /metrics
+        static_configs:
+          - targets:
+              - "media-worker:3001"
+              - "ml-worker:3001"
+              - "email-worker:3001"
+              - "etl-worker:3001"
+              - "report-worker:3001"
+  alerts.yml: |
+    groups:
+      - name: demo_alerts
+        rules:
+          - alert: TargetDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Target down {{ $labels.job }}/{{ $labels.instance }}"
+          - alert: DLQDepthHigh
+            expr: jobque_dlq_depth > 10
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "DLQ depth high on {{ $labels.queue }}"
+          - alert: WorkerHeartbeatMissing
+            expr: (time() - jobque_worker_heartbeat_timestamp) > 60
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Worker heartbeat missing {{ $labels.worker_type }}"
+          - alert: HighJobFailureRate
+            expr: |
+              sum by (queue) (rate(jobque_jobs_failed_total[5m]))
+              /
+              (sum by (queue) (rate(jobque_jobs_completed_total[5m]))
+               + sum by (queue) (rate(jobque_jobs_failed_total[5m])) + 1e-9) > 0.05
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High failure rate on {{ $labels.queue }}"
+  rules.yml: |
+    groups:
+      - name: orchestrate_recording
+        rules:
+          - record: http:duration_seconds:p95:5m
+            expr: |
+              histogram_quantile(0.95,
+                sum by (le, route) (rate(jobque_http_request_duration_seconds_bucket[5m])))
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: orchestrate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.51.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --web.enable-lifecycle
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: orchestrate
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+---
+# ── Alertmanager (optional but recommended for Phase 5) ──────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: orchestrate
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: demo
+      group_by: [alertname, severity]
+    receivers:
+      - name: demo
+        webhook_configs:
+          - url: http://127.0.0.1:1/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: orchestrate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.27.0
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --storage.path=/alertmanager
+          ports:
+            - containerPort: 9093
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: orchestrate
+spec:
+  selector:
+    app: alertmanager
+  ports:
+    - port: 9093
+      targetPort: 9093
+---
+# ── Grafana (with provisioning — mount dashboard JSON separately or bake in) ─
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: orchestrate
+data:
+  prometheus.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-provider
+  namespace: orchestrate
+data:
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: jobque
+        orgId: 1
+        folder: JobQue
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: orchestrate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:10.4.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+            - name: GF_PATHS_PROVISIONING
+              value: /etc/grafana/provisioning
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboards-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboards-provider
+          configMap:
+            name: grafana-dashboards-provider
+            items:
+              - key: dashboards.yml
+                path: dashboard.yml
+        - name: dashboards
+          configMap:
+            name: grafana-dashboard-jobque
+            optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: orchestrate
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000

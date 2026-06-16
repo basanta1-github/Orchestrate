@@ -1,5 +1,6 @@
 import { Controller, Get, Res, Logger, Query } from "@nestjs/common";
 import { Response } from "express";
+import { Public } from "../auth/public.decorator";
 import { MetricService } from "./metrics.service";
 import { QueueMetricsCollector } from "./queue-metrics.collector";
 import { WorkerHealthCollector } from "./worker-health.collector";
@@ -20,6 +21,7 @@ import { QueueReconcileCollector } from "./queueReconcileCollector";
  * Restict access in production via network policy or reverse-proxy allow-list
  */
 
+@Public()
 @Controller("metrics")
 export class MetricsController {
   private readonly logger = new Logger(MetricsController.name);
@@ -37,6 +39,7 @@ export class MetricsController {
    * content-type: text/plain; version=0.0.4 (required by prometheus spec)
    */
 
+  @Public()
   @Get("")
   async getMetrics(@Res() res: Response): Promise<void> {
     try {
@@ -56,6 +59,7 @@ export class MetricsController {
    * Returns 200 when healthy, 503 when metrics collection fails
    */
 
+  @Public()
   @Get("health")
   async health(@Res() res: Response): Promise<void> {
     try {
@@ -81,6 +85,7 @@ export class MetricsController {
    * JSON snapshot of all queue depths - useful for dashboards and debugging
    * Example: SET /metrics/queues
    */
+  @Public()
   @Get("queues")
   async queues(
     @Query("fresh") fresh: string,
@@ -101,6 +106,7 @@ export class MetricsController {
    * expample: GET /metrics/workers
    */
 
+  @Public()
   @Get("workers")
   async workers(@Res() res: Response): Promise<void> {
     const snapShot = this.WorkerHealth.getWorkerSnapshot();
@@ -116,6 +122,7 @@ export class MetricsController {
    * JSON snapshot of per-tenant inflight and staged job counts.
    * Example: GET /metrics/tenants
    */
+  @Public()
   @Get("tenants")
   async tenants(
     @Query("fresh") fresh: string,
@@ -131,6 +138,7 @@ export class MetricsController {
       tenants: snapshot,
     });
   }
+  @Public()
   @Get("reconcile")
   async reconcile(
     @Query("fresh") fresh: string,

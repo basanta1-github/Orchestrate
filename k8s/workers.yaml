@@ -1,0 +1,376 @@
+# Worker Deployments — one per queue type, each with its own HPA
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-worker
+  namespace: orchestrate
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: media-worker
+  template:
+    metadata:
+      labels:
+        app: media-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/basanta1-github/orchestrate-worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: orchestrate-config
+          env:
+            - name: WORKER_TYPE
+              value: media
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: DB_PASS
+          startupProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: media-worker-hpa
+  namespace: orchestrate
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: media-worker
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-worker
+  namespace: orchestrate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-worker
+  template:
+    metadata:
+      labels:
+        app: ml-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/basanta1-github/orchestrate-worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: orchestrate-config
+          env:
+            - name: WORKER_TYPE
+              value: ml
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: DB_PASS
+          startupProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ml-worker-hpa
+  namespace: orchestrate
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ml-worker
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-worker
+  namespace: orchestrate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: email-worker
+  template:
+    metadata:
+      labels:
+        app: email-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/basanta1-github/orchestrate-worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: orchestrate-config
+          env:
+            - name: WORKER_TYPE
+              value: email
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: DB_PASS
+          startupProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: email-worker-hpa
+  namespace: orchestrate
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: email-worker
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etl-worker
+  namespace: orchestrate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: etl-worker
+  template:
+    metadata:
+      labels:
+        app: etl-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/basanta1-github/orchestrate-worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: orchestrate-config
+          env:
+            - name: WORKER_TYPE
+              value: etl
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: DB_PASS
+          startupProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: etl-worker-hpa
+  namespace: orchestrate
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: etl-worker
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report-worker
+  namespace: orchestrate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: report-worker
+  template:
+    metadata:
+      labels:
+        app: report-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/basanta1-github/orchestrate-worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: orchestrate-config
+          env:
+            - name: WORKER_TYPE
+              value: report
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: DB_PASS
+          startupProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics/health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: report-worker-hpa
+  namespace: orchestrate
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: report-worker
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

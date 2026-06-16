@@ -1,7 +1,7 @@
 import { Module, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-// import {HealthController} from './health.controller';
+import { HealthController } from './health.controller';
 import {
   JobsModule,
   DatabaseModule,
@@ -38,7 +38,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
       password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'job_que',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.DB_SYNCHRONIZE !== 'false',
       // logging: true // this gives all the logging of database in console
       logging: ['error', 'warn'],
     }),
@@ -58,7 +58,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     JwtAuthGuard,
     RoleGuard,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
 })
 // export class AppModule {}
 export class AppModule implements OnApplicationBootstrap {

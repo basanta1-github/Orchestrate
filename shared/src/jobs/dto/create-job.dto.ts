@@ -6,6 +6,7 @@ import {
   Min,
   Max,
   IsNumber,
+  IsIn,
 } from "class-validator";
 export class CreateJobDto {
   @IsString()
@@ -15,9 +16,7 @@ export class CreateJobDto {
   metadata: Record<string, any>;
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(10)
+  @IsIn(["HIGH", "MEDIUM", "LOW", "NONE"])
   priorityLevel?: "HIGH" | "MEDIUM" | "LOW" | "NONE";
 
   // number of retries

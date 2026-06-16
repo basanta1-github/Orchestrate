@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: orchestrate
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - postgres.yaml
+  - redis.yaml
+  - api.yaml
+  - workers.yaml
+  - worker-services.yaml
+  - monitoring.yaml
+  - ingress.yaml
+    - ../monitoring/grafana/dashboards/configmap.yaml
+  # Optional — requires KEDA installed in cluster:
+  # - keda-scaledobject.yaml
+
+# Override image tags without editing every Deployment:
+images:
+  - name: ghcr.io/basanta1-github/orchestrate-api
+    newName: ghcr.io/basanta1-github/orchestrate-api
+    newTag: latest
+  - name: ghcr.io/basanta1-github/orchestrate-worker
+    newName: ghcr.io/basanta1-github/orchestrate-worker
+    newTag: latest
+# secrets.yaml is applied separately (gitignored):
+#   kubectl apply -f k8s/secrets.yaml

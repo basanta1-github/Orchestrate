@@ -119,7 +119,13 @@ export class AuthService {
       tenant: { id: admin.tenant.id },
     });
 
-    return this.userRepo.save(newUser);
+    const saved = await this.userRepo.save(newUser);
+    return {
+      userId: saved.id,
+      email: saved.email,
+      role: saved.role,
+      tenantId: saved.tenant.id,
+    };
   }
 
   //   called from googlestrategy after profile is validated // oauth only for company admins

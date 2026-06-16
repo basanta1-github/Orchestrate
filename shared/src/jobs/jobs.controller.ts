@@ -123,4 +123,10 @@ export class JobsController {
     const job = await this.jobsService.listJobs(user.id, user.tenant.id, query);
     return job;
   }
+
+  @Post(":id/retry")
+  @Roles("admin")
+  async retryJob(@Param("id") id: string, @AuthUser() user: any) {
+    return this.jobsService.retryFailedJob(id, user.id, user.tenant.id);
+  }
 }

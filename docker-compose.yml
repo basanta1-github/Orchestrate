@@ -5,13 +5,16 @@ services:
       dockerfile: api/Dockerfile
     ports:
       - "3001:3001"
-    expose:
-      - "3001"
     env_file: .env
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+      API_PORT: "3001"
+      QUEUE_DEPTH_POLLER: "true"
     depends_on:
-       redis:
+      redis:
         condition: service_healthy
-       db:
+      db:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -19,7 +22,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 40s
     networks:
       - jobque_default
 
@@ -27,36 +30,67 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    # command: node dist/email-worker/worker.js
-    command: node dist/main.js
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - WORKER_TYPE=email
-      - REDIS_HOST=redis
-      - METRICS_PORT=3001
+      WORKER_TYPE: email
+      REDIS_HOST: redis
+      DB_HOST: db
+      METRICS_PORT: "3001"
+      JOB_DEMO_DELAY_MS: "0"
     depends_on:
       redis:
         condition: service_healthy
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/metrics').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - jobque_default
-    restart: unless-stopped
 
   etl-worker:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command:  node dist/main.js
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - WORKER_TYPE=etl
-      - REDIS_HOST=redis
-      - METRICS_PORT=3001
+      WORKER_TYPE: etl
+      REDIS_HOST: redis
+      DB_HOST: db
+      METRICS_PORT: "3001"
+      JOB_DEMO_DELAY_MS: "0"
     depends_on:
       redis:
         condition: service_healthy
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/metrics').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - jobque_default
 
@@ -64,18 +98,33 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/main.js
-    # working_dir: /app/workers
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - WORKER_TYPE=media
-      - REDIS_HOST=redis
-      - METRICS_PORT=3001
+      WORKER_TYPE: media
+      REDIS_HOST: redis
+      DB_HOST: db
+      METRICS_PORT: "3001"
+      JOB_DEMO_DELAY_MS: "0"
     depends_on:
-       redis:
+      redis:
         condition: service_healthy
-    restart: unless-stopped?
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/metrics').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - jobque_default
 
@@ -83,17 +132,33 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/main.js
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - WORKER_TYPE=ml
-      - REDIS_HOST=redis
-      - METRICS_PORT=3001
+      WORKER_TYPE: ml
+      REDIS_HOST: redis
+      DB_HOST: db
+      METRICS_PORT: "3001"
+      JOB_DEMO_DELAY_MS: "0"
     depends_on:
-      redis: 
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      api:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/metrics').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - jobque_default
 
@@ -101,19 +166,36 @@ services:
     build:
       context: .
       dockerfile: workers/Dockerfile
-    command: node dist/main.js
-    env_file:
-      - .env
+    env_file: .env
     environment:
-      - WORKER_TYPE=report
-      - REDIS_HOST=redis
-      - METRICS_PORT=3001
+      WORKER_TYPE: report
+      REDIS_HOST: redis
+      DB_HOST: db
+      METRICS_PORT: "3001"
+      JOB_DEMO_DELAY_MS: "0"
     depends_on:
       redis:
         condition: service_healthy
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/metrics').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - jobque_default
+
   redis:
     image: redis:7-alpine
     ports:
@@ -148,9 +230,80 @@ services:
     networks:
       - jobque_default
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    profiles: ["monitoring"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/rules.yml:/etc/prometheus/rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    networks:
+      - jobque_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    profiles: ["monitoring"]
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager-demo.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=http://localhost:9093"
+    networks:
+      - jobque_default
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    profiles: ["monitoring"]
+    ports:
+      - "3002:3000"
+    env_file: .env
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - jobque_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   db_data:
   redis_data:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
 
 networks:
   jobque_default:

@@ -1,40 +1,24 @@
 import { NestFactory } from "@nestjs/core";
 import { WorkerModule } from "./worker.module";
 import "reflect-metadata";
-import { EmailWorker } from "./email-worker/worker";
-import { ETLWorker } from "./etl-worker/worker";
-import { MediaWorker } from "./media-worker/worker";
-import { MLWorker } from "./ml-worker/worker";
-import { ReportWorker } from "./report-worker/worker";
 
-const WORKER_TOKENS = {
-  email: "EmailWorker",
-  etl: "ETLWorker",
-  media: "MediaWorker",
-  ml: "MLWorker",
-  report: "ReportWorker",
-} as const;
+const VALID_TYPES = ["email", "etl", "media", "ml", "report"] as const;
 
 async function bootstrap() {
-  // create() (not createApplicationContext) gives us an http server
-  // which is what lets Prometheus scrape this worker,s /metrics endpoint
-  // const app = await NestFactory.createApplicationContext(WorkerModule);
+  const type = process.env.WORKER_TYPE;
+  if (!type || !VALID_TYPES.includes(type as (typeof VALID_TYPES)[number])) {
+    console.error(
+      `❌ WORKER_TYPE is required. Valid values: ${VALID_TYPES.join(", ")}`,
+    );
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(WorkerModule, {
     logger: ["error", "warn", "log"],
   });
-  const type = process.env.WORKER_TYPE as keyof typeof WORKER_TOKENS;
-  const workerClass = WORKER_TOKENS[type];
-  if (!workerClass) {
-    console.error(`❌ Invalid WORKER_TYPE: ${type}`);
-    await app.close();
-    process.exit(1);
-    return;
-  }
 
-  console.log(`🚀 Starting worker of type: ${type}`);
-  await app.get(workerClass).start();
+  console.log(`🚀 Starting ${type} worker`);
 
-  // expose /metrics for this worker process
   const port = Number(process.env.METRICS_PORT) || 3001;
   await app.listen(port, "0.0.0.0");
   console.log(`📈 ${type}-worker metrics: http://0.0.0.0:${port}/metrics`);

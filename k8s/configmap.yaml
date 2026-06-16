@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrate-config
+  namespace: orchestrate
+data:
+  # ── API ──
+  API_PORT: "3001"
+  NODE_ENV: "production"
+  CORS_ORIGIN: "https://orchestrate.local"
+  QUEUE_DEPTH_POLLER: "true"
+
+  # ── Database ──
+  # In-cluster Postgres Service name (NOT "db" like Docker Compose):
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: job_que
+  DB_USER: postgres
+  # For external RDS/Cloud SQL, override DB_HOST via patch or replace postgres.yaml
+
+
+  DB_SYNCHRONIZE: "true"
+  JOB_DEMO_DELAY_MS: "0"
+  TENANT_JOBS_PER_MINUTE: "0"
+
+
+  # ── Redis / BullMQ ──
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  # For external ElastiCache, override REDIS_HOST and remove redis.yaml from kustomization
+
+  # ── Workers ──
+  METRICS_PORT: "3001"
+  JOB_DEMO_DELAY_MS: "0"
+
+  # ── Optional S3 ──
+  USE_S3: "false"

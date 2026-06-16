@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orchestrate — Job Queue Dashboard</title>
+  <link rel="stylesheet" href="/dashboard/styles.css" />
+</head>
+
+<body>
+  <div id="app">
+    <!-- Auth Screen -->
+    <section id="auth-screen" class="screen">
+      <div class="auth-card">
+        <div class="brand">
+          <div class="brand-icon">⚡</div>
+          <h1>Orchestrate</h1>
+          <p>Distributed Job Queue & Worker System</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="login">Sign In</button>
+          <button class="tab" data-tab="register">Register</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label for="login-tenant">Tenant Name</label>
+          <input type="text" id="login-tenant" required placeholder="acme-corp" />
+
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required placeholder="admin@acme.com" />
+
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required />
+
+          <button type="submit" class="btn primary">Sign In</button>
+        </form>
+
+        <form id="register-form" class="auth-form hidden">
+          <label for="reg-name">Your Name</label>
+          <input type="text" id="reg-name" required />
+
+          <label for="reg-tenant">Tenant Name</label>
+          <input type="text" id="reg-tenant" required placeholder="acme-corp" />
+
+          <label for="reg-email">Email</label>
+          <input type="email" id="reg-email" required />
+
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" required minlength="6" />
+
+          <button type="submit" class="btn primary">Create Tenant & Admin</button>
+        </form>
+
+        <p id="auth-error" class="error hidden"></p>
+      </div>
+    </section>
+
+    <!-- Main Dashboard -->
+    <section id="dashboard-screen" class="screen hidden">
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="brand-small">⚡ Orchestrate</span>
+          <span id="tenant-badge" class="badge"></span>
+        </div>
+        <div class="topbar-right">
+          <a id="grafana-link" href="http://localhost:3002" target="_blank" rel="noopener"
+            class="btn ghost small hidden">Grafana</a>
+          <span id="refresh-indicator" class="refresh-indicator hidden">Refreshing…</span>
+          <span id="user-label"></span>
+          <button id="logout-btn" class="btn ghost">Logout</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <!-- Metrics Row -->
+        <section class="metrics-row" id="metrics-row">
+          <div class="metric-card">
+            <span class="metric-label">Queue Depth</span>
+            <span class="metric-value" id="m-queue-depth">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Active Workers</span>
+            <span class="metric-value" id="m-workers">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Jobs (mine)</span>
+            <span class="metric-value" id="m-my-jobs">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Failed</span>
+            <span class="metric-value danger" id="m-failed">—</span>
+          </div>
+        </section>
+
+        <div class="grid-2">
+          <!-- Submit Job -->
+          <section class="panel">
+            <h2>Submit Job</h2>
+            <form id="job-form">
+              <label for="job-type">Job Type</label>
+              <select id="job-type">
+                <option value="image_resize">image_resize (Media)</option>
+                <option value="video_transcode">video_transcode (Media)</option>
+                <option value="audio_transcode">audio_transcode (Media)</option>
+                <option value="report-jobs">report-jobs (PDF Report)</option>
+                <option value="ml-jobs">ml-jobs (ML Inference)</option>
+                <option value="email-jobs">email-jobs (Email)</option>
+                <option value="etl-jobs">etl-jobs (ETL Pipeline)</option>
+              </select>
+
+              <label for="job-priority">Priority</label>
+              <select id="job-priority">
+                <option value="NONE">NONE</option>
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH" selected>HIGH</option>
+              </select>
+
+              <label for="job-metadata">Metadata (JSON)</label>
+              <textarea id="job-metadata" rows="8" spellcheck="false"></textarea>
+
+              <div class="form-row">
+                <div>
+                  <label for="job-delay">Delay (ms)</label>
+                  <input type="number" id="job-delay" min="0" placeholder="0" />
+                </div>
+                <div>
+                  <label for="job-retries">Retries</label>
+                  <input type="number" id="job-retries" min="0" max="10" placeholder="3" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn primary full">Enqueue Job</button>
+              <p id="submit-msg" class="submit-msg hidden"></p>
+            </form>
+          </section>
+
+          <!-- Queue Snapshot -->
+          <section class="panel">
+            <div class="panel-header">
+              <h2>Queue Snapshot</h2>
+              <button id="refresh-metrics" class="btn ghost small" type="button">Refresh</button>
+            </div>
+            <div id="queue-snapshot" class="queue-grid"></div>
+          </section>
+        </div>
+
+        <!-- Jobs Table -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Your Jobs</h2>
+            <div class="filters">
+              <select id="filter-status">
+                <option value="">All statuses</option>
+                <option value="QUEUED">QUEUED</option>
+                <option value="PROCESSING">PROCESSING</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="FAILED">FAILED</option>
+                <option value="STAGED">STAGED</option>
+              </select>
+              <button id="refresh-jobs" class="btn ghost small" type="button">Refresh</button>
+              <label class="auto-refresh">
+                <input type="checkbox" id="auto-refresh" checked /> Auto (5s)
+              </label>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="jobs-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Retries</th>
+                  <th>Last Error</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobs-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Job Detail Modal -->
+        <div id="job-modal" class="modal hidden" role="dialog" aria-modal="true">
+          <div class="modal-content">
+            <button class="modal-close" id="modal-close" type="button" aria-label="Close">&times;</button>
+            <h3>Job Detail</h3>
+            <div id="job-detail-body"></div>
+          </div>
+        </div>
+      </main>
+    </section>
+  </div>
+  <script src="/dashboard/app.js"></script>
+</body>
+
+</html>

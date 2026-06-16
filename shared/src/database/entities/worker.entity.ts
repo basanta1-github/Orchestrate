@@ -1,24 +1,31 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import {Job} from './job.entity'
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from "typeorm";
+import { Job } from "./job.entity";
 
-@Entity('workers')
+@Entity("workers")
 export class Worker {
-    @PrimaryGeneratedColumn('uuid')
-    id: string
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
 
-    @Column({length: 255})
-    name: string
+  @Column({ length: 255 })
+  name: string;
 
-    @Column({default: true})
-    isActive: boolean
+  @Column({ default: true })
+  isActive: boolean;
 
-    @CreateDateColumn()
-    createdAt: Date
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-    //Relations
-    @OneToMany(()=> Job, job => job.worker)
-    jobs: Job[]
+  //Relations
+  @OneToMany(() => Job, (job) => job.worker)
+  jobs: Job[];
 }

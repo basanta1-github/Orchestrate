@@ -16,7 +16,6 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import validator from "validator";
 import { HunterService } from "./provider/hunter.service";
-import { queue } from "sharp";
 
 /**
  *
@@ -53,8 +52,13 @@ export class EmailProcessor extends BaseProcessor {
 
     //auto generate/fetch id
     const jobId = job.id ?? uuidv4(); // unique id for this job
-    const tenantId = "default-tenant-id"; // fetch from system/session
-    const userId = "default-user-id"; // fetch from system/session
+    // const tenantId = "default-tenant-id"; // fetch from system/session
+    // const userId = "default-user-id"; // fetch from system/session
+    const tenantId = job.data.tenantId;
+    const userId = job.data.userId;
+    if (!tenantId) {
+      throw new Error("Email job missing tenantId in queue payload");
+    }
     const notificationRepo = this.dataSource.getRepository(Notification);
 
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {

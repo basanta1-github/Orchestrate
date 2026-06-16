@@ -3,12 +3,18 @@ import { JobQueuePayload } from "./job-queue.payload";
 import { Injectable, Logger } from "@nestjs/common";
 
 const QUEUE_MAP: Record<string, string[]> = {
-  // ml: ["text_summarization", "classification", "ocr"],
   "media-jobs": ["video_transcode", "audio_transcode", "image_resize"],
-  "etl-jobs": ["etl-jobs"],
-  "ml-jobs": ["ml-jobs"],
-  "email-jobs": ["email-jobs"],
-  "report-jobs": ["report-jobs"],
+  "etl-jobs": ["etl-jobs", "etl_import", "csv_parse"],
+  "ml-jobs": [
+    "ml-jobs",
+    "model_inference",
+    "embedding_generate",
+    "text_summarization",
+    "classification",
+    "ocr",
+  ],
+  "email-jobs": ["email-jobs", "send_email", "email_notification"],
+  "report-jobs": ["report-jobs", "report_generate", "pdf_export"],
 };
 
 @Injectable()
@@ -101,12 +107,23 @@ export class QueueService {
   }
   /** List all recurring jobs in a queue */
   async listRecurringJobs(jobType: string) {
-    const queue = this.queues.get(jobType);
-    if (!queue) throw new Error(`Queue for job type "${jobType}" not found`);
+    const queueName = this.getQueueName(jobType);
+    if (!queueName) {
+      throw new Error(`No queue found for job type "${jobType}"`);
+    }
+
+    const queue = this.queues.get(queueName);
+    if (!queue) {
+      throw new Error(
+        `Queue "${queueName}" not found for job type "${jobType}"`,
+      );
+    }
 
     const schedulers = await queue.getJobSchedulers();
 
-    Logger.log(`Found ${schedulers.length} recurring jobs for ${jobType}`);
+    this.logger.log(
+      `Found ${schedulers.length} recurring jobs for ${jobType} → ${queueName}`,
+    );
     return schedulers;
   }
 

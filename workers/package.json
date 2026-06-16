@@ -20,9 +20,13 @@
   "license": "ISC",
   "type": "commonjs",
   "peerDependencies": {
-    "@jobque/shared": "file:../shared/jobque-shared-1.0.0.tgz",
     "@nestjs/common": "^11.1.12",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.12",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.1.12",
+    "@nestjs/typeorm": "^11.0.0",
     "bullmq": "^5.66.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
@@ -38,6 +42,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@types/passport": "^1.0.17",
     "@types/express": "^5.0.6",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/fs-extra": "^11.0.4",
@@ -52,11 +57,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.991.0",
+    "@jobque/shared": "file:../shared/jobque-shared-1.0.0.tgz",
     "@nestjs/bullmq": "^11.0.4",
     "axios": "^1.13.5",
     "chokidar": "^5.0.0",
     "fs-extra": "^11.3.3",
     "natural": "^8.1.0",
+    "nodemailer": "^8.0.1",
     "p-timeout": "^7.0.1",
     "sharp": "^0.34.5",
     "tesseract.js": "^5.1.1",

@@ -1,14 +1,20 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, Redirect } from '@nestjs/common';
+import { Public } from '@jobque/shared';
 import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
   constructor(@Inject(AppService) private readonly appService: AppService) {}
-  onModuleInit() {
-    // console.log('AppService in AppController:', this.appService);
+
+  @Public()
+  @Get()
+  @Redirect('/dashboard/', 302)
+  rootRedirect() {
+    return;
   }
 
-  @Get()
+  @Public()
+  @Get('api-info')
   getHello(): string {
     return this.appService.getHello();
   }

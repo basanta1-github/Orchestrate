@@ -17,6 +17,7 @@ export * from "./chain/chain.service";
 export * from "./chain/chain.controller";
 
 export * from "./auth";
+export { Public, IS_PUBLIC_KEY } from "./auth/public.decorator";
 
 export * from "./rbac/roleguard";
 export * from "./queue/job-queue.payload";

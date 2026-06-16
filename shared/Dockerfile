@@ -1,21 +1,18 @@
-# shared/Dockerfile
+# shared/Dockerfile — build @jobque/shared artifact (used by CI or local pack)
+FROM node:20-alpine AS builder
 
-FROM node:20-alpine
+WORKDIR /build/shared
 
-WORKDIR /app
+RUN apk add --no-cache python3 make g++
 
-# Install dependencies
-COPY package*.json ./
-RUN npm install
+COPY shared/package*.json ./
+RUN npm ci
 
-# Copy source
-COPY tsconfig.json ./
-COPY src ./src
+COPY shared/tsconfig.json ./
+COPY shared/src ./src
 
-# Build shared library
-RUN npx tsc
-# RUN npx nest build
+RUN npm run build && npm pack && mv jobque-shared-*.tgz /tmp/jobque-shared.tgz
 
-# This image is NOT meant to run this is only a library bor workers and api so no need
-# It only exists to be reused by api & workers
-# CMD ["tail", "-f", "/dev/null"]
+# Export-only stage (not meant to run as a service)
+FROM scratch AS export
+COPY --from=builder /tmp/jobque-shared.tgz /

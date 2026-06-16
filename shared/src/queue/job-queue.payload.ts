@@ -3,6 +3,7 @@ export interface JobQueuePayload {
   jobId: string;
   jobType: string;
   tenantId: string;
+  userId?: string;
   priorityLevel: string;
   retries: number;
   metadata?: Record<string, any>;

@@ -1,0 +1,27 @@
+# Demo Alertmanager — alerts visible in UI at http://localhost:9093
+# No Slack/webhook needed. For production, use alertmanager.yml + secrets.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: "demo-log"
+  group_by: ["alertname", "queue", "severity"]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 2h
+
+receivers:
+  - name: "demo-log"
+    webhook_configs:
+      - url: "http://127.0.0.1:1/"
+        send_resolved: true
+        # Intentionally unreachable — Alertmanager UI still shows FIRING alerts.
+        # Use http://localhost:9093/#/alerts during demo.
+
+inhibit_rules:
+  - source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity = warning
+    equal: ["queue", "alertname"]

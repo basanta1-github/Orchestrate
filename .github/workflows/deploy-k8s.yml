@@ -1,0 +1,109 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (e.g. v1.0.0, latest, commit-sha)"
+        required: true
+        default: latest
+      environment:
+        description: "GitHub Environment (optional approval gate)"
+        required: false
+        default: production
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  deploy:
+    name: Deploy to cluster
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    # Expose secrets as env vars — secrets.* cannot be used in step `if:` conditions
+    env:
+      KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        if: env.KUBE_CONFIG_DATA != ''
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ env.KUBE_CONFIG_DATA }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl cluster-info
+      - name: Ensure namespace
+        if: env.KUBE_CONFIG_DATA != ''
+        run: kubectl apply -f k8s/namespace.yaml
+
+      - name: Apply Kubernetes secrets
+        if: env.KUBE_CONFIG_DATA != '' && env.JWT_SECRET != ''
+        run: |
+          kubectl create secret generic orchestrate-secrets \
+            --from-literal=JWT_SECRET="${{ env.JWT_SECRET }}" \
+            --from-literal=DB_PASS="${{ env.DB_PASS }}" \
+            --from-literal=AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}" \
+            --from-literal=AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}" \
+            --from-literal=AWS_REGION="${{ env.AWS_REGION }}" \
+            --from-literal=S3_BUCKET="${{ env.S3_BUCKET }}" \
+            --from-literal=SMTP_HOST="${{ env.SMTP_HOST }}" \
+            --from-literal=SMTP_PORT="${{ env.SMTP_PORT }}" \
+            --from-literal=SMTP_USER="${{ env.SMTP_USER }}" \
+            --from-literal=SMTP_PASS="${{ env.SMTP_PASS }}" \
+            -n orchestrate \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Set image tags via Kustomize
+        working-directory: k8s
+        if: env.KUBE_CONFIG_DATA != ''
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          TAG="${{ inputs.image_tag }}"
+
+          # Patch image tags without editing committed yaml
+          kustomize edit set image \
+            ghcr.io/basanta1-github/orchestrate-api=ghcr.io/${OWNER}/orchestrate-api:${TAG}
+
+          kustomize edit set image \
+            ghcr.io/basanta1-github/orchestrate-worker=ghcr.io/${OWNER}/orchestrate-worker:${TAG}
+
+          echo "Deploying images with tag: ${TAG}"
+          kustomize build .
+
+      - name: Apply Kubernetes manifests
+        working-directory: k8s
+        if: env.KUBE_CONFIG_DATA != ''
+        run: kubectl apply -k .
+
+      - name: Wait for rollouts
+        if: env.KUBE_CONFIG_DATA != ''
+        run: |
+          kubectl rollout status deployment/api           -n orchestrate --timeout=300s
+          kubectl rollout status deployment/media-worker  -n orchestrate --timeout=300s
+          kubectl rollout status deployment/ml-worker     -n orchestrate --timeout=300s
+          kubectl rollout status deployment/email-worker  -n orchestrate --timeout=300s
+          kubectl rollout status deployment/etl-worker    -n orchestrate --timeout=300s
+          kubectl rollout status deployment/report-worker -n orchestrate --timeout=300s
+
+      - name: Verify deployment
+        if: env.KUBE_CONFIG_DATA != ''
+        run: |
+          kubectl get pods -n orchestrate
+          kubectl get hpa  -n orchestrate

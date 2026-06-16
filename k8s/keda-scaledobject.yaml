@@ -1,0 +1,43 @@
+# OPTIONAL — queue-depth scaling (smarter than CPU for workers)
+# Prerequisites:
+#   1. KEDA installed: kubectl apply -f https://github.com/kedacore/keda/releases/download/v2.14.0/keda-2.14.0.yaml
+#   2. Validate Redis key names — BullMQ may NOT use simple Redis lists
+#      Debug: kubectl exec -n orchestrate deploy/redis -- redis-cli KEYS 'bull:*'
+#
+# NOTE: If KEDA + HPA both target same Deployment, prefer KEDA-only for workers
+#       (remove worker HPAs or set KEDA as sole scaler)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: media-worker-scaler
+  namespace: orchestrate
+spec:
+  scaleTargetRef:
+    name: media-worker
+  minReplicaCount: 1
+  maxReplicaCount: 15
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: redis
+      metadata:
+        address: redis.orchestrate.svc.cluster.local:6379
+        listName: bull:media-jobs:wait
+        listLength: "5"
+        enableTLS: "false"
+---
+# Alternative: scale from Prometheus queue metric (more accurate for BullMQ)
+# apiVersion: keda.sh/v1alpha1
+# kind: ScaledObject
+# metadata:
+#   name: media-worker-prometheus-scaler
+#   namespace: orchestrate
+# spec:
+#   scaleTargetRef:
+#     name: media-worker
+#   triggers:
+#     - type: prometheus
+#       metadata:
+#         serverAddress: http://prometheus:9090
+#         query: sum(orchestrate_queue_waiting{queue="media-jobs"})
+#         threshold: "5"

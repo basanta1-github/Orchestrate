@@ -7,3 +7,4 @@
 coverage
 /Documents
 secrets/
+k8s/secrets.yaml

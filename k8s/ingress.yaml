@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orchestrate-ingress
+  namespace: orchestrate
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # Optional TLS via cert-manager:
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: orchestrate.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3001
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+  # tls:
+  #   - hosts: [orchestrate.local]
+  #     secretName: orchestrate-tls

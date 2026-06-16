@@ -20,7 +20,6 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@nestjs/passport": "^11.0.5",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.5.2",
     "@types/passport-google-oauth20": "^2.0.17",
@@ -42,6 +41,10 @@
   },
   "dependencies": {
     "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "bcrypt": "^6.0.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
     "pg": "^8.18.0",
     "prom-client": "^15.1.3"
   }

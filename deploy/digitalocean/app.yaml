@@ -1,0 +1,144 @@
+# DigitalOcean App Platform — Orchestrate API + all workers
+# Docs: https://docs.digitalocean.com/products/app-platform/reference/app-spec/
+name: orchestrate
+region: nyc
+
+x-worker-env: &worker_env
+  - key: NODE_ENV
+    value: production
+  - key: DB_HOST
+    value: ${db.HOSTNAME}
+  - key: DB_PORT
+    value: ${db.PORT}
+  - key: DB_USER
+    value: ${db.USERNAME}
+  - key: DB_PASS
+    value: ${db.PASSWORD}
+  - key: DB_NAME
+    value: ${db.DATABASE}
+  - key: REDIS_HOST
+    value: ${redis.HOSTNAME}
+  - key: REDIS_PORT
+    value: ${redis.PORT}
+  - key: METRICS_PORT
+    value: "3001"
+  - key: JOB_DEMO_DELAY_MS
+    value: "0"
+  - key: DB_SYNCHRONIZE
+    value: "true"
+
+services:
+  - name: api
+    github:
+      repo: basanta1-github/Orchestrate
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: api/Dockerfile
+    source_dir: /
+    http_port: 3001
+    instance_count: 1
+    instance_size_slug: basic-xs
+    health_check:
+      http_path: /health
+    envs:
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        value: ${db.HOSTNAME}
+      - key: DB_PORT
+        value: ${db.PORT}
+      - key: DB_USER
+        value: ${db.USERNAME}
+      - key: DB_PASS
+        value: ${db.PASSWORD}
+      - key: DB_NAME
+        value: ${db.DATABASE}
+      - key: REDIS_HOST
+        value: ${redis.HOSTNAME}
+      - key: REDIS_PORT
+        value: ${redis.PORT}
+      - key: QUEUE_DEPTH_POLLER
+        value: "true"
+      - key: DB_SYNCHRONIZE
+        value: "true"
+      - key: CORS_ORIGIN
+        value: ${api.PUBLIC_URL}
+
+  - name: media-worker
+    github:
+      repo: basanta1-github/Orchestrate
+      branch: main
+    dockerfile_path: workers/Dockerfile
+    source_dir: /
+    instance_count: 1
+    instance_size_slug: basic-xs
+    envs:
+      - <<: *worker_env
+      - key: WORKER_TYPE
+        value: media
+
+  - name: ml-worker
+    github:
+      repo: basanta1-github/Orchestrate
+      branch: main
+    dockerfile_path: workers/Dockerfile
+    source_dir: /
+    instance_count: 1
+    instance_size_slug: basic-xs
+    envs:
+      - <<: *worker_env
+      - key: WORKER_TYPE
+        value: ml
+
+  - name: email-worker
+    github:
+      repo: basanta1-github/Orchestrate
+      branch: main
+    dockerfile_path: workers/Dockerfile
+    source_dir: /
+    instance_count: 1
+    instance_size_slug: basic-xs
+    envs:
+      - <<: *worker_env
+      - key: WORKER_TYPE
+        value: email
+
+  - name: etl-worker
+    github:
+      repo: basanta1-github/Orchestrate
+      branch: main
+    dockerfile_path: workers/Dockerfile
+    source_dir: /
+    instance_count: 1
+    instance_size_slug: basic-xs
+    envs:
+      - <<: *worker_env
+      - key: WORKER_TYPE
+        value: etl
+
+  - name: report-worker
+    github:
+      repo: basanta1-github/Orchestrate
+      branch: main
+    dockerfile_path: workers/Dockerfile
+    source_dir: /
+    instance_count: 1
+    instance_size_slug: basic-xs
+    envs:
+      - <<: *worker_env
+      - key: WORKER_TYPE
+        value: report
+
+databases:
+  - name: db
+    engine: PG
+    version: "15"
+    production: false
+
+  - name: redis
+    engine: REDIS
+    version: "7"
+    production: false

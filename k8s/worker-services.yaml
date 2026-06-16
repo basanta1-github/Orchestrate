@@ -1,0 +1,61 @@
+# ClusterIP services so Prometheus can scrape worker /metrics endpoints
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-worker
+  namespace: orchestrate
+spec:
+  selector:
+    app: media-worker
+  ports:
+    - port: 3001
+      targetPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-worker
+  namespace: orchestrate
+spec:
+  selector:
+    app: ml-worker
+  ports:
+    - port: 3001
+      targetPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: email-worker
+  namespace: orchestrate
+spec:
+  selector:
+    app: email-worker
+  ports:
+    - port: 3001
+      targetPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etl-worker
+  namespace: orchestrate
+spec:
+  selector:
+    app: etl-worker
+  ports:
+    - port: 3001
+      targetPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: report-worker
+  namespace: orchestrate
+spec:
+  selector:
+    app: report-worker
+  ports:
+    - port: 3001
+      targetPort: 3001

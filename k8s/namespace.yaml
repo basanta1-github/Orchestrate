@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orchestrate
+  labels:
+    app.kubernetes.io/name: orchestrate
+    app.kubernetes.io/part-of: jobque

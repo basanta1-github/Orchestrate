@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -48,7 +49,7 @@ export class JobsService {
       type: dto.jobType,
       metadata: dto.metadata,
       priorityLevel: dto.priorityLevel ?? "NONE",
-      retries: 3,
+      retries: dto.retries ?? 3,
       status: Scheduled ? JobStatus.SCHEDULED : JobStatus.QUEUED,
       tenant: { id: tenantId }, // TypeORM accepts object with only id for ManyToOne
       user: { id: userId },
@@ -93,6 +94,7 @@ export class JobsService {
         recurringJobId,
         jobType: savedJob.type,
         tenantId: tenantId,
+        userId,
         priorityLevel: savedJob.priorityLevel,
         retries: savedJob.retries,
         metadata: savedJob.metadata,
@@ -126,6 +128,8 @@ export class JobsService {
       .where("job.id = :jobId", { jobId })
       .andWhere("tenant.id = :tenantId", { tenantId })
       .orderBy("attempts.attemptNumber", "ASC") // important: order attempts
+      .leftJoinAndSelect("job.logs", "logs")
+      .addOrderBy("logs.createdAt", "ASC")
       .getOne();
 
     if (!job) {
@@ -249,5 +253,31 @@ export class JobsService {
         completedAt: job.completedAt,
       },
     };
+  }
+  async retryFailedJob(jobId: string, userId: string, tenantId: string) {
+    const job = await this.jobRepo.findOne({
+      where: { id: jobId, tenant: { id: tenantId } },
+    });
+    if (!job) throw new NotFoundException("Job not found");
+    if (job.status !== JobStatus.FAILED) {
+      throw new BadRequestException("Only FAILED jobs can be retried");
+    }
+
+    job.status = JobStatus.QUEUED;
+    job.completedAt = undefined;
+    await this.jobRepo.save(job);
+
+    await this.tenantCapService.submitJob({
+      jobId: job.id,
+      jobType: job.type,
+      tenantId,
+      userId,
+      priorityLevel: job.priorityLevel,
+      retries: job.retries,
+      metadata: job.metadata,
+      queueName: resolveQueueName(job.type),
+    });
+
+    return this.formatJobResponse(job);
   }
 }

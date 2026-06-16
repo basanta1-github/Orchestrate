@@ -1,8 +1,12 @@
 import { Queue, Worker, Job as BullJob, KeepJobs, QueueEvents } from "bullmq";
 import { BaseProcessor } from "./base.processor";
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import Redis from "ioredis";
-import { workerRegistryService, QueueReconcileCollector } from "@jobque/shared";
+import {
+  workerRegistryService,
+  QueueReconcileCollector,
+  QueueMetricsCollector,
+} from "@jobque/shared";
 
 @Injectable()
 export abstract class BaseWorker {
@@ -21,11 +25,24 @@ export abstract class BaseWorker {
   // in-memory counter for jobs per minute
   // private jobTimeStamps: number[] = [];
 
+  private readonly redis: Redis;
+  private readonly tenantRateLimit: number;
+
   constructor(
     protected readonly queueName: string,
     protected readonly workerRegistery: workerRegistryService,
+    protected readonly queueMetrics: QueueMetricsCollector,
     protected readonly queueReconcileCollector: QueueReconcileCollector,
-  ) {}
+  ) {
+    this.redis = new Redis({
+      host: process.env.REDIS_HOST || "redis",
+      port: Number(process.env.REDIS_PORT || 6379),
+    });
+    this.tenantRateLimit = parseInt(
+      process.env.TENANT_JOBS_PER_MINUTE ?? "0",
+      10,
+    );
+  }
 
   // child classes must implement this to return thieir processor
   // protected abstract getProcessor(): BaseProcessor;
@@ -68,6 +85,20 @@ export abstract class BaseWorker {
         // }
         // console.log("this.processor:", processor);
         // console.log("execute:", processor?.execute);
+
+        if (this.tenantRateLimit > 0 && job.data?.tenantId) {
+          const redisKey = `jobs:${job.data.tenantId}:${Math.floor(Date.now() / 60000)}`;
+          const current = await this.redis.incr(redisKey);
+          if (current === 1) {
+            await this.redis.expire(redisKey, 60);
+          }
+          if (current > this.tenantRateLimit) {
+            throw new Error(
+              `Rate limit: max ${this.tenantRateLimit} jobs/minute for tenant ${job.data.tenantId}`,
+            );
+          }
+        }
+
         this.logger.log(`Worker received job ${job.id}`);
         return processor.execute(job);
       },

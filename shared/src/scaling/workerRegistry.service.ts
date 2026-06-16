@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
-import { Worker, Job as BullJob } from "bullmq";
+import { Worker, Job as BullJob, Queue } from "bullmq";
+import { QueueMetricsCollector } from "../metrics/queue-metrics.collector";
 // import { BaseProcessor } from "../../../workers/src/base-worker/base.processor";
 // import { queue } from "sharp";
 
@@ -20,6 +21,7 @@ import { Worker, Job as BullJob } from "bullmq";
  */
 @Injectable()
 export class workerRegistryService implements OnModuleDestroy {
+  constructor(private readonly queueMetrics: QueueMetricsCollector) {}
   private readonly logger = new Logger(workerRegistryService.name);
 
   /**
@@ -130,6 +132,9 @@ export class workerRegistryService implements OnModuleDestroy {
     queueName: string,
     processor: (job: BullJob) => Promise<void>,
   ): Worker {
+    const dlqQueue = new Queue(`${queueName}_DLQ`, {
+      connection: this.redisConnection,
+    });
     const worker = new Worker(queueName, processor, {
       connection: this.redisConnection,
       concurrency: 1,
@@ -146,12 +151,23 @@ export class workerRegistryService implements OnModuleDestroy {
         `[${queueName}] COMPLETED BullJob=${job.id} DBJob=${job.data.jobId}`,
       );
     });
-    worker.on("failed", (job, err) => {
+    worker.on("failed", async (job, err) => {
       this.logger.error(
         `[${queueName}] FAILED BullJob=${job?.id} attempt=${job?.attemptsMade}`,
         err.stack,
       );
+      if (!job) return;
+      const maxAttempts = job.opts.attempts ?? 5;
+      if (job.attemptsMade >= maxAttempts) {
+        await dlqQueue.add(job.name, job.data, {
+          removeOnComplete: false,
+          removeOnFail: false,
+        });
+        this.queueMetrics.recordDlqMove(queueName, job.name);
+        this.logger.error(`[${queueName}] Job ${job.id} moved to DLQ`);
+      }
     });
+
     return worker;
   }
 

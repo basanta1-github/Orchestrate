@@ -1,7 +1,11 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BaseWorker } from "../base-worker/base.worker";
 import { ReportProcessor } from "./processor";
-import { QueueReconcileCollector, workerRegistryService } from "@jobque/shared";
+import {
+  QueueMetricsCollector,
+  QueueReconcileCollector,
+  workerRegistryService,
+} from "@jobque/shared";
 
 @Injectable()
 export class ReportWorker extends BaseWorker implements OnModuleInit {
@@ -9,8 +13,14 @@ export class ReportWorker extends BaseWorker implements OnModuleInit {
     private readonly reportProcessor: ReportProcessor,
     workerRegistery: workerRegistryService,
     queueReconcileCollector: QueueReconcileCollector,
+    queueMetrics: QueueMetricsCollector,
   ) {
-    super("report-jobs", workerRegistery, queueReconcileCollector);
+    super(
+      "report-jobs",
+      workerRegistery,
+      queueMetrics,
+      queueReconcileCollector,
+    );
   }
 
   async onModuleInit() {
