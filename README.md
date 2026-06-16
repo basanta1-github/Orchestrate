@@ -96,13 +96,17 @@ docker compose --profile monitoring up -d
 
 ```
 
-**Automated smoke test** (health + register + ML job lifecycle):
+**Automated smoke test**
+(health + register + ML job lifecycle):
+
+```bash
 npm run verify:m1
 npm run verify:m1:health # health endpoints only
+```
 
-# Grafana datasource URL (inside Grafana): http://prometheus:9090
+Grafana datasource URL (inside Grafana): http://prometheus:9090
 
-# Prometheus in your browser: http://localhost:9090 (not http://prometheus:9090)
+Prometheus in your browser: http://localhost:9090 (not http://prometheus:9090)
 
 If Grafana login fails after recreating containers:
 
@@ -111,7 +115,7 @@ docker compose exec grafana grafana-cli admin reset-admin-password admin
 
 ```
 
-### First-time demo
+## First-time demo
 
 1. Open http://localhost:3001/dashboard/
 2. Click **Register** — create a tenant and admin user
@@ -316,7 +320,3 @@ See [deploy/README.md](deploy/README.md) for:
 ## License
 
 ISC @Basanta_Pokhrel
-
-```
-
-```
