@@ -66,7 +66,7 @@ flowchart LR
 
 ## Quick Start (Docker — recommended)
 
-````bash
+```bash
 git clone https://github.com/basanta1-github/Orchestrate.git
 cd Orchestrate
 # Environment
@@ -80,8 +80,11 @@ docker compose --profile monitoring up -d
 # npm run docker:full
 
 
-```markdown
+```
+
 ### Verify
+
+```bash
 | Service        | URL                                      | Notes                          |
 | -------------- | ---------------------------------------- | ------------------------------ |
 | API health     | http://localhost:3001/health             | `{"status":"ok"}`              |
@@ -90,21 +93,24 @@ docker compose --profile monitoring up -d
 | Prometheus     | http://localhost:9090                    | Targets: all `jobque-*` UP     |
 | Grafana        | http://localhost:3002                    | Default `admin` / `admin`      |
 | Alertmanager   | http://localhost:9093                    | Alert routing (demo config)    |
-**Automated smoke test** (health + register + ML job lifecycle):
-```bash
-npm run verify:m1
-npm run verify:m1:health   # health endpoints only
----
 
-Grafana datasource URL (inside Grafana): http://prometheus:9090
-Prometheus in your browser: http://localhost:9090 (not http://prometheus:9090)
+```
+
+**Automated smoke test** (health + register + ML job lifecycle):
+npm run verify:m1
+npm run verify:m1:health # health endpoints only
+
+# Grafana datasource URL (inside Grafana): http://prometheus:9090
+
+# Prometheus in your browser: http://localhost:9090 (not http://prometheus:9090)
 
 If Grafana login fails after recreating containers:
 
+```bash
 docker compose exec grafana grafana-cli admin reset-admin-password admin
 
+```
 
-```markdown
 ### First-time demo
 
 1. Open http://localhost:3001/dashboard/
@@ -115,7 +121,6 @@ docker compose exec grafana grafana-cli admin reset-admin-password admin
 4. Watch status in the jobs table (auto-refresh ~every 5s): `QUEUED` → `PROCESSING` → `COMPLETED`
 5. Open Grafana → **JobQue — System Overview** (or Explore: `up{job="jobque-worker"}`)
 6. Optional: Prometheus → **Status → Targets** — `jobque-api` + 5 workers should be **UP**
-
 
 ## Local Development (without full Docker)
 
@@ -133,23 +138,35 @@ $env:WORKER_TYPE="media"   # PowerShell
 node dist/main.js
 ```
 
-🧑‍💻 Local Development (IMPORTANT)
+### 🧑‍💻 Local Development (IMPORTANT)
 
 Run system WITHOUT Docker full stack:
 
 Step 1 — Shared
+
+```bash
 cd shared
 npm install
 npm run watch
+```
+
 Step 2 — Workers
+
+```bash
 cd workers
 npm install
 npm run watch
+```
+
 Step 3 — API
+
+```bash
 cd api
 npm install
-npm run dev
-💡 Result
+npm run watch
+```
+
+# 💡 Result
 
 Now your system runs locally:
 
@@ -157,64 +174,65 @@ API → localhost:3001
 Workers → auto-consume jobs
 Shared → live rebuild
 
-👉 Enjoy the server in local setup
+# 👉 Enjoy the server in local setup
 
 ## NPM Scripts
 
-| Script                        | Description                                      |
-| ----------------------------- | ------------------------------------------------ |
-| `npm run build:all`           | Build shared → workers → api (local dev)         |
-| `npm run dev:api`             | NestJS watch mode (after `build:all`)            |
-| `npm run docker:up`           | Build & start core Docker stack                  |
-| `npm run docker:down`         | Stop all compose services                        |
-| `npm run docker:full`         | Core stack + monitoring profile                  |
-| `npm run docker:monitoring`   | Start Prometheus/Grafana/Alertmanager only       |
-| `npm run docker:logs`         | Follow API logs                                  |
-| `npm run docker:ps`           | Container status                                 |
-| `npm run verify:m1`           | Health + register + ML job until COMPLETED       |
-| `npm run verify:m1:health`    | `/health` and `/metrics/health` only             |
-| `npm run verify:monitoring`   | Curl Prometheus/Grafana (bash)                 |
-| `npm run verify:k8s`          | Post-deploy K8s checks (bash)                    |
-| `npm run migration:run`       | Apply PostgreSQL migrations                      |
-| `npm run k8s:apply`           | `kubectl apply -k k8s/`                          |
-| `npm run k8s:deploy`          | Full deploy script (bash / Git Bash on Windows)  |
-| `npm run k8s:status`          | Pods + HPA in `orchestrate` namespace            |
+| Script                      | Description                                     |
+| --------------------------- | ----------------------------------------------- |
+| `npm run build:all`         | Build shared → workers → api (local dev)        |
+| `npm run dev:api`           | NestJS watch mode (after `build:all`)           |
+| `npm run docker:up`         | Build & start core Docker stack                 |
+| `npm run docker:down`       | Stop all compose services                       |
+| `npm run docker:full`       | Core stack + monitoring profile                 |
+| `npm run docker:monitoring` | Start Prometheus/Grafana/Alertmanager only      |
+| `npm run docker:logs`       | Follow API logs                                 |
+| `npm run docker:ps`         | Container status                                |
+| `npm run verify:m1`         | Health + register + ML job until COMPLETED      |
+| `npm run verify:m1:health`  | `/health` and `/metrics/health` only            |
+| `npm run verify:monitoring` | Curl Prometheus/Grafana (bash)                  |
+| `npm run verify:k8s`        | Post-deploy K8s checks (bash)                   |
+| `npm run migration:run`     | Apply PostgreSQL migrations                     |
+| `npm run k8s:apply`         | `kubectl apply -k k8s/`                         |
+| `npm run k8s:deploy`        | Full deploy script (bash / Git Bash on Windows) |
+| `npm run k8s:status`        | Pods + HPA in `orchestrate` namespace           |
 
 ## API Endpoints
 
-| Method | Path              | Auth   | Description               |
-| ------ | ----------------- | ------ | ------------------------- |
-| POST   | `/auth/register`  | Public | Create tenant + admin     |
-| POST   | `/auth/login`     | Public | Get JWT token             |
-| POST   | `/jobs`           | Admin  | Submit a job              |
-| GET    | `/jobs`           | User   | List jobs (tenant-scoped) |
-| GET    | `/jobs/:id`       | User   | Job detail + logs         |
-| POST   | `/jobs/workflow`  | Admin  | Chained job workflow      |
-| GET    | `/metrics`        | Public | Prometheus scrape         |
-| GET    | `/metrics/queues` | Public | Queue depth snapshot      |
-| GET    | `/health`         | Public | Load balancer health      |
+| Method | Path              | Auth   | Description                   |
+| ------ | ----------------- | ------ | ----------------------------- |
+| POST   | `/auth/register`  | Public | Create tenant + admin         |
+| POST   | `/auth/login`     | Public | Get JWT token                 |
+| POST   | `/jobs`           | Admin  | Submit a job                  |
+| GET    | `/jobs`           | User   | List jobs (tenant-scoped)     |
+| GET    | `/jobs/:id`       | User   | Job detail + logs             |
+| POST   | `/jobs/workflow`  | Admin  | Chained job workflow          |
+| GET    | `/metrics`        | Public | Prometheus scrape             |
+| GET    | `/metrics/queues` | Public | Queue depth snapshot          |
+| GET    | `/health`         | Public | Load balancer health          |
 | GET    | `/metrics/health` | Public | Metrics subsystem health (LB) |
 
 ## CI/CD
 
 GitHub Actions (`.github/workflows/`):
 
-| Workflow              | Trigger                         | What it does |
-| --------------------- | ------------------------------- | ------------ |
-| **ci.yml**            | Push/PR to `main`, `develop`    | `build:all`, ESLint, unit tests, Docker smoke build (API + worker images, no push) |
-| **docker-publish.yml** | Push to `main`, tags `v*`, manual | Build and push to GHCR |
-| **deploy-k8s.yml**    | Manual only                     | Deploy to cluster using `KUBE_CONFIG_DATA` and repo secrets |
+| Workflow               | Trigger                           | What it does                                                                       |
+| ---------------------- | --------------------------------- | ---------------------------------------------------------------------------------- |
+| **ci.yml**             | Push/PR to `main`, `develop`      | `build:all`, ESLint, unit tests, Docker smoke build (API + worker images, no push) |
+| **docker-publish.yml** | Push to `main`, tags `v*`, manual | Build and push to GHCR                                                             |
+| **deploy-k8s.yml**     | Manual only                       | Deploy to cluster using `KUBE_CONFIG_DATA` and repo secrets                        |
 
 **Published images (GHCR):**
 
-```text
 ghcr.io/basanta1-github/orchestrate-api:latest
 ghcr.io/basanta1-github/orchestrate-worker:latest
 
-```markdown
+````markdown
 ## Kubernetes
+
 **Prerequisites:** kubectl, a cluster, images on GHCR (from `docker-publish.yml`).
-```bash
+
+````bash
 cp k8s/secrets.example.yaml k8s/secrets.yaml
 # Edit JWT_SECRET, DB_PASS, optional SMTP/S3
 kubectl apply -f k8s/secrets.yaml
@@ -294,4 +312,5 @@ See [deploy/README.md](deploy/README.md) for:
 ## License
 
 ISC @Basanta_Pokhrel
+````
 ````
