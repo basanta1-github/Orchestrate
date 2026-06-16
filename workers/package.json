@@ -42,12 +42,12 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "@types/passport": "^1.0.17",
     "@types/express": "^5.0.6",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.8",
     "@types/nodemailer": "^7.0.11",
+    "@types/passport": "^1.0.17",
     "@types/pdfkit": "^0.17.5",
     "chokidar-cli": "^3.0.0",
     "express": "^5.2.1",
