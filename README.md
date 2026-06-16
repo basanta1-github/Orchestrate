@@ -138,7 +138,7 @@ $env:WORKER_TYPE="media"   # PowerShell
 node dist/main.js
 ```
 
-### 🧑‍💻 Local Development (IMPORTANT)
+## 🧑‍💻 Local Development (IMPORTANT)
 
 Run system WITHOUT Docker full stack:
 
@@ -166,7 +166,7 @@ npm install
 npm run watch
 ```
 
-# 💡 Result
+💡 Result
 
 Now your system runs locally:
 
@@ -174,7 +174,7 @@ API → localhost:3001
 Workers → auto-consume jobs
 Shared → live rebuild
 
-# 👉 Enjoy the server in local setup
+👉 Enjoy the server in local setup
 
 ## NPM Scripts
 
@@ -227,12 +227,11 @@ GitHub Actions (`.github/workflows/`):
 ghcr.io/basanta1-github/orchestrate-api:latest
 ghcr.io/basanta1-github/orchestrate-worker:latest
 
-````markdown
 ## Kubernetes
 
 **Prerequisites:** kubectl, a cluster, images on GHCR (from `docker-publish.yml`).
 
-````bash
+```bash
 cp k8s/secrets.example.yaml k8s/secrets.yaml
 # Edit JWT_SECRET, DB_PASS, optional SMTP/S3
 kubectl apply -f k8s/secrets.yaml
@@ -241,6 +240,7 @@ kubectl apply -k k8s/
 kubectl get pods -n orchestrate -w
 kubectl rollout status deployment/api -n orchestrate
 npm run migration:run
+```
 
 Manifests include:
 
@@ -249,24 +249,29 @@ Manifests include:
 - PostgreSQL, Redis, Prometheus, Grafana
 - Ingress for API + Grafana
 
-```markdown
 ## Environment variables
-Copy `.env.example` → `.env`. Key settings:
-| Variable | Docker Compose | Local dev (host) | Notes |
-| -------- | -------------- | ---------------- | ----- |
-| `DB_HOST` | `db` | `localhost` | PostgreSQL |
-| `REDIS_HOST` | `redis` | `localhost` | BullMQ |
-| `API_PORT` | `3001` | `3001` | API + dashboard |
-| `JWT_SECRET` | required | required | Use long random string in prod |
-| `DB_SYNCHRONIZE` | `true` (dev) | `true` (dev) | **Set `false` in production** — use migrations |
-| `GRAFANA_ADMIN_USER` / `PASSWORD` | optional | — | Grafana login |
-| `USE_S3`, `AWS_*` | optional | optional | Media worker uploads |
-| `SMTP_*` | optional | optional | Email worker |
-See `.env.example` for the full list.
 
+Copy `.env.example` → `.env`. Key settings:
+
+```markdown
+| Variable                          | Docker Compose | Local dev (host) | Notes                                          |
+| --------------------------------- | -------------- | ---------------- | ---------------------------------------------- |
+| `DB_HOST`                         | `db`           | `localhost`      | PostgreSQL                                     |
+| `REDIS_HOST`                      | `redis`        | `localhost`      | BullMQ                                         |
+| `API_PORT`                        | `3001`         | `3001`           | API + dashboard                                |
+| `JWT_SECRET`                      | required       | required         | Use long random string in prod                 |
+| `DB_SYNCHRONIZE`                  | `true` (dev)   | `true` (dev)     | **Set `false` in production** — use migrations |
+| `GRAFANA_ADMIN_USER` / `PASSWORD` | optional       | —                | Grafana login                                  |
+| `USE_S3`, `AWS_*`                 | optional       | optional         | Media worker uploads                           |
+| `SMTP_*`                          | optional       | optional         | Email worker                                   |
+
+See `.env.example` for the full list.
+```
 
 ## Production checklist
+
 Before deploying to a real environment:
+
 - [ ] CI green on `main` ([Actions](https://github.com/basanta1-github/Orchestrate/actions))
 - [ ] Strong `JWT_SECRET` and `DB_PASS` (not defaults)
 - [ ] `NODE_ENV=production`
@@ -279,14 +284,14 @@ Before deploying to a real environment:
 
 ## Troubleshooting
 
-| Issue | Fix |
-| ----- | --- |
-| Docker build `EINTEGRITY` on `@jobque/shared` | Dockerfiles install packed tarballs before `npm ci`; run `docker compose build --no-cache` |
-| `verify:m1` job 400 on `priorityLevel` | Use valid levels: `HIGH`, `MEDIUM`, `LOW`, `NONE` |
-| ML job `FAILED`: input too short | Summarization needs **≥ 20 characters** |
-| Grafana `ERR_NAME_NOT_RESOLVED` for `prometheus:9090` in browser | Use `localhost:9090` in browser; `http://prometheus:9090` only inside Grafana datasource |
-| Grafana login fails | `grafana-cli admin reset-admin-password admin` |
-| Job stuck `QUEUED` | Check worker logs: `docker compose logs ml-worker --tail 50` |
+| Issue                                                            | Fix                                                                                        |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Docker build `EINTEGRITY` on `@jobque/shared`                    | Dockerfiles install packed tarballs before `npm ci`; run `docker compose build --no-cache` |
+| `verify:m1` job 400 on `priorityLevel`                           | Use valid levels: `HIGH`, `MEDIUM`, `LOW`, `NONE`                                          |
+| ML job `FAILED`: input too short                                 | Summarization needs **≥ 20 characters**                                                    |
+| Grafana `ERR_NAME_NOT_RESOLVED` for `prometheus:9090` in browser | Use `localhost:9090` in browser; `http://prometheus:9090` only inside Grafana datasource   |
+| Grafana login fails                                              | `grafana-cli admin reset-admin-password admin`                                             |
+| Job stuck `QUEUED`                                               | Check worker logs: `docker compose logs ml-worker --tail 50`                               |
 
 ## Cloud Deployment
 
@@ -308,9 +313,10 @@ See [deploy/README.md](deploy/README.md) for:
 | Containers | Docker Compose (dev), Kubernetes (prod) |
 | CI/CD      | GitHub Actions                          |
 
-
 ## License
 
 ISC @Basanta_Pokhrel
-````
-````
+
+```
+
+```
