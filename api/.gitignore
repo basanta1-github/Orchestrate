@@ -4,9 +4,9 @@
 /build
 
 # for now auth
-auth
 processed_media
 processed_report
+media_input_temp
 
 
 # Logs

@@ -8,3 +8,5 @@ coverage
 /Documents
 secrets/
 k8s/secrets.yaml
+actions-runner
+media_input_temp

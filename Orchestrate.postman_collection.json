@@ -1,0 +1,768 @@
+{
+  "info": {
+    "_postman_id": "5df6fd19-4b85-43ef-b756-c796a88034be",
+    "name": "Orchestrate",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "36813854"
+  },
+  "item": [
+    {
+      "name": "_MAIN",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3001",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GetJobByID",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMDUyYWJmMC01OTdhLTRkMTctYWQ3Yi04YTdiMzdmZWNiMDkiLCJlbWFpbCI6InBva2hyZWxiMjQ2NTY3QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMjVkN2VhNmQtYmFiNS00YjViLTkxNTEtODAzMzE2MDM1MGM2IiwiaWF0IjoxNzgxNzYyNDU2LCJleHAiOjE3ODE3NjYwNTZ9.zBXEQI9ImxG5Jo32DuHkvs_-D8DKIG4ET31ZXr1sMCE",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs/37667148-a622-4b47-b9cd-863a372058d2",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs",
+            "37667148-a622-4b47-b9cd-863a372058d2"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getAllJobs",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MThhZTExYS0zYzlkLTQ0MGEtYjNhMi0yNTk2MTljNTNkMWQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiYjM0ZDViMjAtMzU1Zi00YzQ3LWFlYTYtZTAzMzEwNmI5NzFmIiwiaWF0IjoxNzc0NDg5OTkwLCJleHAiOjE3NzQ0OTM1OTB9.irbgiBt7S2LxLbqqg3STy-gSHJDrv7Q8ZFRpqg6SSbY",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "CreateJobMedia",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMDUyYWJmMC01OTdhLTRkMTctYWQ3Yi04YTdiMzdmZWNiMDkiLCJlbWFpbCI6InBva2hyZWxiMjQ2NTY3QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMjVkN2VhNmQtYmFiNS00YjViLTkxNTEtODAzMzE2MDM1MGM2IiwiaWF0IjoxNzgxNzYyNDU2LCJleHAiOjE3ODE3NjYwNTZ9.zBXEQI9ImxG5Jo32DuHkvs_-D8DKIG4ET31ZXr1sMCE",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"jobType\": \"image_resize\",\r\n  \"metadata\": {\r\n    \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n     \"format\": \"png\",\r\n    \"height\": 600,\r\n    \"width\": 500,\r\n    \"filters\": {\r\n      \"grayscale\": true,\r\n      \"rotate\": 90\r\n    }\r\n  }\r\n//   \"priority\": \"HIGH\"\r\n}\r\n\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createJobsReport",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMDUyYWJmMC01OTdhLTRkMTctYWQ3Yi04YTdiMzdmZWNiMDkiLCJlbWFpbCI6InBva2hyZWxiMjQ2NTY3QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMjVkN2VhNmQtYmFiNS00YjViLTkxNTEtODAzMzE2MDM1MGM2IiwiaWF0IjoxNzgxNzYyNDU2LCJleHAiOjE3ODE3NjYwNTZ9.zBXEQI9ImxG5Jo32DuHkvs_-D8DKIG4ET31ZXr1sMCE",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"jobType\": \"report-jobs\",\r\n  \"metadata\": {\r\n    \"title\":\"Orders Summary\",\r\n    \"generatedBy\":\"Admin\",\r\n   \"data\": [\r\n      { \"name\": \"John\", \"amount\": 100 },\r\n      { \"name\": \"Jane\", \"amount\": 200 }\r\n    ]\r\n  }\r\n}\r\n\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "scheduledJobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"jobType\": \"etl-jobs\",\r\n   \"metadata\": {\r\n    \"source\": \"users_table\",\r\n    \"transformType\": \"uppercase_name\",\r\n    \"target\": \"processed_users_table\"\r\n  },\r\n  \"cron\":\"*/1 * * * *\",\r\n  \"priority\": 3\r\n}\r\n\r\n"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs/schedule",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs",
+            "schedule"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "mlJobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MThhZTExYS0zYzlkLTQ0MGEtYjNhMi0yNTk2MTljNTNkMWQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiYjM0ZDViMjAtMzU1Zi00YzQ3LWFlYTYtZTAzMzEwNmI5NzFmIiwiaWF0IjoxNzc0NDc2NTY0LCJleHAiOjE3NzQ0ODAxNjR9.wo1XNJA9V_D7g2Mtrm5ej9FZk4h9EI15AbULajjq7rg",
+            "type": "text"
+          },
+          {
+            "key": "",
+            "value": "",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"jobType\": \"ml-jobs\",\r\n  \"metadata\": {\r\n    \"taskType\": \"ocr\",\r\n    \"input\": \"https://i.sstatic.net/0Jl54.png\"  \r\n  }\r\n}\r\n\r\n"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "emailJobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1MTUxMDNlNC0wMzViLTQyZDEtYWIxZi05ZmQxNmJhZTQ3YjgiLCJlbWFpbCI6InBva2hyZWxiMjQ2NTY3QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiN2ViZTk5ZTctMjNkZC00NTcwLWI3MmMtYTY4NDUzZDBlMWY5IiwiaWF0IjoxNzgxNjc4NjI2LCJleHAiOjE3ODE2ODIyMjZ9.5cbAjVYy3Z_5RFPqm8CmdLtYPDcqCu1Dn1W8MBubpYA",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"jobType\": \"email-jobs\",\r\n   \"metadata\": {\r\n    \"recipients\": [\"demo@gmail.com\", \"demo@gmail.com\"],\r\n    \"subject\": \"Welcome\",\r\n    \"content\": \"<h1>Welcome from Distributed Job queue and worker system and fuck you</h1>\"\r\n  }\r\n}\r\n\r\n\r\n"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "listRecurring",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"jobType\": \"etl-jobs\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs/list-recurring",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs",
+            "list-recurring"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "etl-jobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MThhZTExYS0zYzlkLTQ0MGEtYjNhMi0yNTk2MTljNTNkMWQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiYjM0ZDViMjAtMzU1Zi00YzQ3LWFlYTYtZTAzMzEwNmI5NzFmIiwiaWF0IjoxNzc0NDc2NTY0LCJleHAiOjE3NzQ0ODAxNjR9.wo1XNJA9V_D7g2Mtrm5ej9FZk4h9EI15AbULajjq7rg",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"jobType\": \"etl-jobs\",\r\n   \"metadata\": {\r\n    \"source\": \"users_table\",\r\n    \"transformType\": \"uppercase_name\",\r\n    \"target\": \"processed_users_table\"\r\n  }\r\n}\r\n\r\n"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "stopRecurring",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"jobType\": \"etl-jobs\",\r\n  \"cronPattern\": \"*/1 * * * *\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs/stop-recurring",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs",
+            "stop-recurring"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "workflow_chained",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MThhZTExYS0zYzlkLTQ0MGEtYjNhMi0yNTk2MTljNTNkMWQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiYjM0ZDViMjAtMzU1Zi00YzQ3LWFlYTYtZTAzMzEwNmI5NzFmIiwiaWF0IjoxNzc2MjQ0MTI3LCJleHAiOjE3NzYyNDc3Mjd9.MzhfGPj2TqTeoxul4f6jbqVGKwYW8EK756rBCeK3nyE",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "    {\r\n    \"jobs\": [\r\n       {\r\n            \"key\": \"job-a\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n                // \"filters\": [\"grayscale\", \"rotate\"]\r\n                // }\r\n            }\r\n    },\r\n        {\r\n            \"key\": \"job-b\",\r\n            \"type\": \"email-jobs\",\r\n            \"dependsOn\": \"job-a\",\r\n            \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": { \r\n                \"recipients\": [\"demo@gmail.com\"],\r\n                \"subject\": \"Welcome\",\r\n                \"content\": \"<h1>Welcome from Distributed Job queue and worker system </h1>\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-c\",\r\n            \"type\": \"etl-jobs\",\r\n            \"dependsOn\": \"job-b\",\r\n            \"priorityLevel\": \"MEDIUM\",\r\n            \"metadata\": {  \r\n                \"source\": \"users_table\",\r\n                \"transformType\": \"uppercase_name\",\r\n                \"target\": \"processed_users_table\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-f\",\r\n            \"type\": \"etl-jobs\",\r\n            \"dependsOn\": \"job-c\",\r\n            \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {  \r\n                \"source\": \"users_table\",\r\n                \"transformType\": \"uppercase_name\",\r\n                \"target\": \"processed_users_table\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-g\",\r\n            \"type\": \"etl-jobs\",\r\n            \"dependsOn\": \"job-c\",\r\n            \"priorityLevel\": \"MEDIUM\",\r\n            \"metadata\": {  \r\n                \"source\": \"users_table\",\r\n                \"transformType\": \"uppercase_name\",\r\n                \"target\": \"processed_users_table\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-i\",\r\n            \"type\": \"etl-jobs\",\r\n            \"dependsOn\": \"job-g\",\r\n            \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {  \r\n                \"source\": \"users_table\",\r\n                \"transformType\": \"uppercase_name\",\r\n                \"target\": \"processed_users_table\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-j\",\r\n            \"type\": \"etl-jobs\",\r\n            \"dependsOn\": \"job-g\",\r\n            \"priorityLevel\": \"MEDIUM\",\r\n            \"metadata\": {  \r\n                \"source\": \"users_table\",\r\n                \"transformType\": \"uppercase_name\",\r\n                \"target\": \"processed_users_table\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-k\",\r\n            \"type\": \"etl-jobs\",\r\n            \"dependsOn\": \"job-g\",\r\n            // \"priorityLevel\": \"LOW\",\r\n            \"metadata\": {  \r\n                \"source\": \"users_table\",\r\n                \"transformType\": \"uppercase_name\",\r\n                \"target\": \"processed_users_table\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-h\",\r\n            \"type\": \"etl-jobs\",\r\n            \"dependsOn\": \"job-c\",\r\n            \"priorityLevel\": \"LOW\",\r\n            \"metadata\": {  \r\n                \"source\": \"users_table\",\r\n                \"transformType\": \"uppercase_name\",\r\n                \"target\": \"processed_users_table\"\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-d\",\r\n            \"type\": \"report-jobs\",\r\n            \"dependsOn\": \"job-a\",\r\n            \"priorityLevel\": \"MEDIUM\",\r\n            \"metadata\": {\r\n                \"title\":\"Orders Summary\",\r\n                \"generatedBy\":\"Admin\",\r\n                \"data\": [\r\n                    { \"name\": \"John\", \"amount\": 100 },\r\n                    { \"name\": \"Jane\", \"amount\": 200 }\r\n                ]\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-e\",\r\n            \"type\": \"ml-jobs\",\r\n            \"dependsOn\": \"job-a\",\r\n            \"priorityLevel\": \"MEDIUM\",\r\n            \"metadata\": {\r\n                \"taskType\": \"ocr\",\r\n                \"input\": \"https://i.sstatic.net/0Jl54.png\"  \r\n            }\r\n        }\r\n    ]\r\n    }"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs/workflow",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs",
+            "workflow"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\":\"ssssss admin\",\r\n    \"email\":\"demo@gmail.com\",\r\n    \"password\":\"abcdefgh\",\r\n    \"tenantName\":\"mistey facilities567\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/auth/register",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\":\"demo@gmail.com\",\r\n    \"password\":\"abcdefgh\",\r\n    \"tenantName\":\"mistey facilities\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3001/auth/login",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "createUser",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NGYyNDM2ZC0yMDBlLTQ1NmItOTU5Yi04YTVlOGQ0ZWY4ZTQiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJ0ZW5hbnRJZCI6ImIzNGQ1YjIwLTM1NWYtNGM0Ny1hZWE2LWUwMzMxMDZiOTcxZiIsImlhdCI6MTc3NDQ4ODUyMiwiZXhwIjoxNzc0NDkyMTIyfQ.zh1iufauDWBt9JUi1V9bJKcMbA8pAYE7pMSgZJ2oU8U",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\":\"user2@gmail.com\",\r\n    \"password\":\"abcdefgh\",\r\n    \"tenantName\":\"mistey facilities\",\r\n    \"role\":\"user\",\r\n    \"name\":\"user\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/auth/create-users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "auth",
+            "create-users"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "batchjobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYTYyZGZhMi05NTc5LTRmMzQtYTdmMy1mYjY2N2EzNmE1OWIiLCJlbWFpbCI6InBva2hyZWxiMjQ2NTY3QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiM2RiZjJmZDktMWY4YS00NGRkLWFjZmUtMTQ2ZGFiODhmNmI3IiwiaWF0IjoxNzgxNjU3ODA2LCJleHAiOjE3ODE2NjE0MDZ9.dS4CcOprG0IbzxPsQIaDxy7pcl1yyC75QDBn2kqwAys",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "    {\r\n    \"jobs\": [\r\n       {\r\n            \"key\": \"job-a\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-b\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-c\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-d\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-e\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-f\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-g\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-h\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-i\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        }, {\r\n            \"key\": \"job-j\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        }\r\n    ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs/batch",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs",
+            "batch"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "MetricsTenants",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNWU4YThhNi0yZDQwLTQ2NGUtYjk0MS0wNzYyMWJjMTc0OGQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMDhkMGU0ZDYtZTBmMi00NmJlLThkOTMtZDdiOGFjMDg0ZjdlIiwiaWF0IjoxNzgwOTQ5ODE5LCJleHAiOjE3ODA5NTM0MTl9.-0K8mUuEUSbbyFWWq1H7IhWzZHXLdnkLQxX9EckRABA",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\":\"demo@gmail.com\",\r\n    \"password\":\"abcdefgh\",\r\n    \"tenantName\":\"mistey facilities\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/metrics/tenants?fresh=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "metrics",
+            "tenants"
+          ],
+          "query": [
+            {
+              "key": "fresh",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "metricsQueue",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNWU4YThhNi0yZDQwLTQ2NGUtYjk0MS0wNzYyMWJjMTc0OGQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMDhkMGU0ZDYtZTBmMi00NmJlLThkOTMtZDdiOGFjMDg0ZjdlIiwiaWF0IjoxNzgwOTUzNDczLCJleHAiOjE3ODA5NTcwNzN9.fojkQ1adVKV7EAcP_QL6PajD-53CBrGr8znu1S914Yk",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:3001/metrics/queues?fresh=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "metrics",
+            "queues"
+          ],
+          "query": [
+            {
+              "key": "fresh",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "debugState",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "metricsWorkers",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNWU4YThhNi0yZDQwLTQ2NGUtYjk0MS0wNzYyMWJjMTc0OGQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMDhkMGU0ZDYtZTBmMi00NmJlLThkOTMtZDdiOGFjMDg0ZjdlIiwiaWF0IjoxNzc2MzE5Njc3LCJleHAiOjE3NzYzMjMyNzd9.CZl_wMTBC9dNdTywZpFe8-7nW6jmXBsP88gpGe-FvCM",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3001/metrics/workers",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "metrics",
+            "workers"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "alMetrics",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNWU4YThhNi0yZDQwLTQ2NGUtYjk0MS0wNzYyMWJjMTc0OGQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMDhkMGU0ZDYtZTBmMi00NmJlLThkOTMtZDdiOGFjMDg0ZjdlIiwiaWF0IjoxNzgwOTgzMzkzLCJleHAiOjE3ODA5ODY5OTN9.6h64Jeif48JmEoOyXRCfY8xBWqa8G9WQXyKE_aOloug",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\":\"demo@gmail.com\",\r\n    \"password\":\"abcdefgh\",\r\n    \"tenantName\":\"mistey facilities\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/metrics/reconcile?fresh=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "metrics",
+            "reconcile"
+          ],
+          "query": [
+            {
+              "key": "fresh",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "retryFailedJobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNWU4YThhNi0yZDQwLTQ2NGUtYjk0MS0wNzYyMWJjMTc0OGQiLCJlbWFpbCI6InBva2hyZWxiMjQ2QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiMDhkMGU0ZDYtZTBmMi00NmJlLThkOTMtZDdiOGFjMDg0ZjdlIiwiaWF0IjoxNzgwOTgzMzkzLCJleHAiOjE3ODA5ODY5OTN9.6h64Jeif48JmEoOyXRCfY8xBWqa8G9WQXyKE_aOloug",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "    {\r\n    \"jobs\": [\r\n       {\r\n            \"key\": \"job-a\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },\r\n        {\r\n            \"key\": \"job-b\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-c\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-d\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-e\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-f\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-g\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-h\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        },{\r\n            \"key\": \"job-i\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        }, {\r\n            \"key\": \"job-j\",\r\n            \"type\": \"image_resize\",\r\n               //   \"dependsOn\": \"job-a\",\r\n            // \"priorityLevel\": \"HIGH\",\r\n            \"metadata\": {\r\n                \"fileUrl\": \"https://examplefile.com/storage/file/file_icons/jpg.png\",\r\n                \"format\": \"png\",\r\n                \"height\": 600,\r\n                \"width\": 500,\r\n                \"filters\": {\r\n                    \"grayscale\": true,\r\n                    \"rotate\": 90\r\n                }\r\n            }\r\n        }\r\n    ]\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs/:id/retry",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs",
+            ":id",
+            "retry"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": ""
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "video jobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1MTUxMDNlNC0wMzViLTQyZDEtYWIxZi05ZmQxNmJhZTQ3YjgiLCJlbWFpbCI6InBva2hyZWxiMjQ2NTY3QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudElkIjoiN2ViZTk5ZTctMjNkZC00NTcwLWI3MmMtYTY4NDUzZDBlMWY5IiwiaWF0IjoxNzgxNjc4NjI2LCJleHAiOjE3ODE2ODIyMjZ9.5cbAjVYy3Z_5RFPqm8CmdLtYPDcqCu1Dn1W8MBubpYA",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"jobType\": \"video_transcode\",\r\n  \"metadata\": {\r\n    \"fileUrl\": \"https://filesamples.com/samples/video/mp4/sample_640x360.mp4\",\r\n     \"format\": \"mp4\"\r\n    }\r\n  }\r\n\r\n\r\n"
+        },
+        "url": {
+          "raw": "http://localhost:3001/jobs",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3001",
+          "path": [
+            "jobs"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

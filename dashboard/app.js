@@ -27,7 +27,7 @@ const JOB_TEMPLATES = {
       "Orchestrate is a distributed job queue system built with NestJS, BullMQ, Redis, and PostgreSQL.",
   },
   "email-jobs": {
-    recipients: ["pokhrelb246@gmail.com"],
+    recipients: ["demo@example.com"],
     subject: "Orchestrate Demo",
     content: "Hello from the Orchestrate email worker!",
   },
