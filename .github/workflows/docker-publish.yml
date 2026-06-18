@@ -62,6 +62,7 @@ jobs:
           context: .
           file: workers/Dockerfile
           push: true
+          load: true
           tags: |
             ${{ env.IMAGE_WORKER }}:latest
             ${{ env.IMAGE_WORKER }}:${{ steps.meta.outputs.version }}

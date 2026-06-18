@@ -69,6 +69,7 @@ jobs:
           context: .
           file: workers/Dockerfile
           push: false
+          load: true
           tags: orchestrate-worker:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
