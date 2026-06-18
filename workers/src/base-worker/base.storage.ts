@@ -9,13 +9,27 @@ const s3 = new S3Client({
   //   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   // },
 });
-
+function resolveLocalOutputDir(folder: string): string {
+  if (folder === "processed_media" && process.env.MEDIA_OUTPUT_DIR) {
+    return process.env.MEDIA_OUTPUT_DIR;
+  }
+  if (folder === "processed_report" && process.env.REPORT_OUTPUT_DIR) {
+    return process.env.REPORT_OUTPUT_DIR;
+  }
+  return path.join(process.cwd(), folder);
+}
+function getPublicApiUrl(): string {
+  return (process.env.PUBLIC_API_URL || "http://localhost:3001").replace(
+    /\/$/,
+    "",
+  );
+}
 export async function uploadFileLocal(
   filePath: string,
   folder: string = "processed_storage",
 ): Promise<{ url: string; path: string }> {
   const fileName = path.basename(filePath);
-  const localDir = path.join(process.cwd(), folder);
+  const localDir = resolveLocalOutputDir(folder);
 
   //make sure folder exists
   await fs.ensureDir(localDir);
@@ -27,7 +41,7 @@ export async function uploadFileLocal(
   }
   // return destinationPath;
   return {
-    url: `http://localhost:3001/${folder}/${fileName}`,
+    url: `${getPublicApiUrl()}/${folder}/${fileName}`,
     path: destinationPath,
   };
 }

@@ -7,7 +7,11 @@ import path from "path";
 export class ReportController {
   @Get(":filename")
   async getFile(@Param("filename") filename: string, @Res() res: Response) {
-    const filePath = path.join(process.cwd(), "processed_report", filename);
+    const filePath = path.join(
+      process.env.REPORT_OUTPUT_DIR ||
+        path.join(process.cwd(), "processed_report"),
+      filename,
+    );
     if (!fs.existsSync(filePath)) {
       throw new NotFoundException("File not found");
     }

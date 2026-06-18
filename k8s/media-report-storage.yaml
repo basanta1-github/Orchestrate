@@ -1,0 +1,27 @@
+# Path B — shared disk for media/report local URLs (API + workers).
+# Requires a storage class that supports ReadWriteMany (e.g. NFS, EFS, Longhorn).
+# If PVC stays Pending on Docker Desktop / Minikube, use:
+#   kubectl apply -k k8s/overlays/local-storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-data-pvc
+  namespace: orchestrate
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: report-data-pvc
+  namespace: orchestrate
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

@@ -72,3 +72,8 @@ jobs:
           tags: orchestrate-worker:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify ffmpeg in worker image
+        run: |
+          docker run --rm orchestrate-worker:ci ffmpeg -version
+          docker run --rm orchestrate-worker:ci ffprobe -version

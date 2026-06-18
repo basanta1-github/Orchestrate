@@ -7,8 +7,11 @@ import { InjectDataSource } from "@nestjs/typeorm";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs-extra";
 import path from "path";
+import { createWriteStream } from "fs";
+import { pipeline } from "stream/promises";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
+import type { AxiosResponse } from "axios";
 import { uploadFileLocal, uploadFileS3 } from "../base-worker/base.storage";
 import {
   ChainService,
@@ -23,6 +26,15 @@ export class MediaProcessor extends BaseProcessor {
   private readonly MAX_WIDTH = 5000;
   private readonly MAX_HEIGHT = 5000;
   private readonly MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+  private readonly MAX_MEDIA_INPUT_SIZE =
+    Number(process.env.MEDIA_MAX_INPUT_BYTES) || 500 * 1024 * 1024; // 500MB
+  private readonly MEDIA_DOWNLOAD_TIMEOUT_MS =
+    Number(process.env.MEDIA_DOWNLOAD_TIMEOUT_MS) || 5 * 60 * 1000;
+  private readonly HTTP_HEADERS = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    Accept: "*/*",
+  };
   private readonly ALLOWED_FORMATS = ["jpeg", "png", "jpg", "webp"];
   private readonly ALLOWED_FILTERS = [
     "grayscale",
@@ -90,8 +102,8 @@ export class MediaProcessor extends BaseProcessor {
     }
 
     const fullOutputPath = path.join(
-      process.cwd(),
-      "processed_media",
+      process.env.MEDIA_OUTPUT_DIR ||
+        path.join(process.cwd(), "processed_media"),
       outputFileName,
     );
 
@@ -109,7 +121,11 @@ export class MediaProcessor extends BaseProcessor {
     // Clean temp file (if it's a separate temp output, not local copy)
     if (
       fullOutputPath !==
-      path.join(process.cwd(), "processed_media", outputFileName)
+      path.join(
+        process.env.MEDIA_OUTPUT_DIR ||
+          path.join(process.cwd(), "processed_media"),
+        outputFileName,
+      )
     ) {
       await fs.remove(fullOutputPath);
     }
@@ -126,38 +142,133 @@ export class MediaProcessor extends BaseProcessor {
     console.log(`✅ FINISH ${job.data.jobId} at ${new Date().toISOString()}`);
   }
   private async processVideo(fileUrl: string, format: string): Promise<string> {
+    const { inputPath, cleanup } = await this.resolveMediaInput(fileUrl);
+    try {
+      return await this.runFfmpegTranscode(inputPath, format);
+    } finally {
+      await cleanup();
+    }
+  }
+
+  private async processAudio(fileUrl: string, format: string): Promise<string> {
+    const { inputPath, cleanup } = await this.resolveMediaInput(fileUrl);
+    try {
+      return await this.runFfmpegTranscode(inputPath, format);
+    } finally {
+      await cleanup();
+    }
+  }
+
+  private async resolveMediaInput(
+    fileUrl: string,
+  ): Promise<{ inputPath: string; cleanup: () => Promise<void> }> {
+    if (!/^https?:\/\//i.test(fileUrl)) {
+      return { inputPath: fileUrl, cleanup: async () => {} };
+    }
+
+    const tempDir = path.join(process.cwd(), "media_input_temp");
+    await fs.ensureDir(tempDir);
+
+    const urlPath = new URL(fileUrl).pathname;
+    const ext = path.extname(urlPath) || ".bin";
+    const tempPath = path.join(tempDir, `${uuidv4()}${ext}`);
+
+    console.log(`[MediaProcessor] downloading input ${fileUrl} -> ${tempPath}`);
+
+    let response: AxiosResponse<NodeJS.ReadableStream>;
+    try {
+      response = await axios.get(fileUrl, {
+        responseType: "stream",
+        timeout: this.MEDIA_DOWNLOAD_TIMEOUT_MS,
+        maxContentLength: this.MAX_MEDIA_INPUT_SIZE,
+        maxBodyLength: this.MAX_MEDIA_INPUT_SIZE,
+        headers: {
+          ...this.HTTP_HEADERS,
+          Referer: fileUrl,
+        },
+      });
+    } catch (err) {
+      throw new Error(
+        `Failed to download media from URL: ${this.formatDownloadError(err)}`,
+      );
+    }
+
+    const contentLength = Number(response.headers["content-length"]);
+    if (
+      Number.isFinite(contentLength) &&
+      contentLength > this.MAX_MEDIA_INPUT_SIZE
+    ) {
+      throw new Error(
+        `Remote file too large (${contentLength} bytes). Max ${this.MAX_MEDIA_INPUT_SIZE} bytes allowed`,
+      );
+    }
+
+    try {
+      await pipeline(response.data, createWriteStream(tempPath));
+    } catch (err) {
+      await fs.remove(tempPath).catch(() => {});
+      throw new Error(
+        `Failed to save downloaded media: ${this.formatDownloadError(err)}`,
+      );
+    }
+
+    const stats = await fs.stat(tempPath);
+    if (stats.size === 0) {
+      await fs.remove(tempPath).catch(() => {});
+      throw new Error("Downloaded media file is empty");
+    }
+    if (stats.size > this.MAX_MEDIA_INPUT_SIZE) {
+      await fs.remove(tempPath).catch(() => {});
+      throw new Error(
+        `Downloaded file too large (${stats.size} bytes). Max ${this.MAX_MEDIA_INPUT_SIZE} bytes allowed`,
+      );
+    }
+
+    console.log(
+      `[MediaProcessor] downloaded ${stats.size} bytes from ${fileUrl}`,
+    );
+
+    return {
+      inputPath: tempPath,
+      cleanup: async () => {
+        await fs.remove(tempPath).catch(() => {});
+      },
+    };
+  }
+
+  private async runFfmpegTranscode(
+    inputPath: string,
+    format: string,
+  ): Promise<string> {
     const outputFileName = `${uuidv4()}.${format}`;
     const outputPath = path.join(
-      process.cwd(),
-      "processed_media",
+      process.env.MEDIA_OUTPUT_DIR ||
+        path.join(process.cwd(), "processed_media"),
       outputFileName,
     );
     await fs.ensureDir(path.dirname(outputPath));
 
     return new Promise((resolve, reject) => {
-      ffmpeg(fileUrl)
+      ffmpeg(inputPath)
         .output(outputPath)
+        .on("stderr", (line) => {
+          console.log("[ffmpeg]", line);
+        })
+        .on("error", (err) => {
+          console.error("FFMPEG ERROR:", err);
+          reject(err);
+        })
         .on("end", () => resolve(outputFileName))
-        .on("error", (err) => reject(err))
         .run();
     });
   }
-  private async processAudio(fileUrl: string, format: string): Promise<string> {
-    const outputFileName = `${uuidv4()}.${format}`;
-    const outputPath = path.join(
-      process.cwd(),
-      "processed_media",
-      outputFileName,
-    );
-    await fs.ensureDir(path.dirname(outputPath));
 
-    return new Promise((resolve, reject) => {
-      ffmpeg(fileUrl)
-        .output(outputPath)
-        .on("end", () => resolve(outputFileName))
-        .on("error", (err) => reject(err))
-        .run();
-    });
+  private formatDownloadError(err: unknown): string {
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status;
+      return status ? `${err.message} (HTTP ${status})` : err.message;
+    }
+    return err instanceof Error ? err.message : String(err);
   }
   private async processImage(
     fileUrl: string,
@@ -170,8 +281,8 @@ export class MediaProcessor extends BaseProcessor {
     const { default: sharp } = await import("sharp"); // dynamic import to reduce startup time and optional dependency
     const outputFileName = `${uuidv4()}.${format}`;
     const outputPath = path.join(
-      process.cwd(),
-      "processed_media",
+      process.env.MEDIA_OUTPUT_DIR ||
+        path.join(process.cwd(), "processed_media"),
       outputFileName,
     );
     await fs.ensureDir(path.dirname(outputPath));
@@ -182,8 +293,7 @@ export class MediaProcessor extends BaseProcessor {
         responseType: "arraybuffer",
         timeout: 10000,
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+          ...this.HTTP_HEADERS,
           Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
           Referer: fileUrl,
         },

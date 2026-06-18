@@ -22,14 +22,30 @@ spec:
           envFrom:
             - configMapRef:
                 name: orchestrate-config
+            - secretRef:
+                name: orchestrate-secrets
           env:
             - name: WORKER_TYPE
               value: media
+            - name: FFMPEG_PATH
+              value: /usr/bin/ffmpeg
+            - name: FFPROBE_PATH
+              value: /usr/bin/ffprobe
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: JWT_SECRET
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
                   name: orchestrate-secrets
                   key: DB_PASS
+            - name: MEDIA_OUTPUT_DIR
+              value: "/app/shared/media"
+          volumeMounts:
+            - name: media-data
+              mountPath: /app/shared/media
           startupProbe:
             httpGet:
               path: /metrics/health
@@ -54,6 +70,10 @@ spec:
             limits:
               cpu: "2"
               memory: 2Gi
+      volumes:
+        - name: media-data
+          persistentVolumeClaim:
+            claimName: media-data-pvc
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -97,9 +117,16 @@ spec:
           envFrom:
             - configMapRef:
                 name: orchestrate-config
+            - secretRef:
+                name: orchestrate-secrets
           env:
             - name: WORKER_TYPE
               value: ml
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: JWT_SECRET
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
@@ -172,9 +199,16 @@ spec:
           envFrom:
             - configMapRef:
                 name: orchestrate-config
+            - secretRef:
+                name: orchestrate-secrets
           env:
             - name: WORKER_TYPE
               value: email
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: JWT_SECRET
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
@@ -247,9 +281,16 @@ spec:
           envFrom:
             - configMapRef:
                 name: orchestrate-config
+            - secretRef:
+                name: orchestrate-secrets
           env:
             - name: WORKER_TYPE
               value: etl
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: JWT_SECRET
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
@@ -322,14 +363,26 @@ spec:
           envFrom:
             - configMapRef:
                 name: orchestrate-config
+            - secretRef:
+                name: orchestrate-secrets
           env:
             - name: WORKER_TYPE
               value: report
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrate-secrets
+                  key: JWT_SECRET
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
                   name: orchestrate-secrets
                   key: DB_PASS
+            - name: REPORT_OUTPUT_DIR
+              value: "/app/shared/reports"
+          volumeMounts:
+            - name: report-data
+              mountPath: /app/shared/reports
           startupProbe:
             httpGet:
               path: /metrics/health
@@ -354,6 +407,10 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: report-data
+          persistentVolumeClaim:
+            claimName: report-data-pvc
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

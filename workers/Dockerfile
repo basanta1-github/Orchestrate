@@ -45,6 +45,9 @@ WORKDIR /app/workers
 # ffmpeg required for media-worker (video/audio transcode)
 RUN apk add --no-cache ffmpeg
 
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+ENV FFPROBE_PATH=/usr/bin/ffprobe
+
 ENV NODE_ENV=production
 
 COPY --from=workers-builder /build/workers/dist ./dist

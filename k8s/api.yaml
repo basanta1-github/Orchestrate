@@ -6,7 +6,7 @@ metadata:
   labels:
     app: api
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: api
@@ -38,6 +38,11 @@ spec:
                 secretKeyRef:
                   name: orchestrate-secrets
                   key: DB_PASS
+          volumeMounts:
+            - name: media-data
+              mountPath: /app/shared/media
+            - name: report-data
+              mountPath: /app/shared/reports
           startupProbe:
             httpGet:
               path: /health
@@ -63,6 +68,14 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+      volumes:
+        - name: media-data
+          persistentVolumeClaim:
+            claimName: media-data-pvc
+        - name: report-data
+          persistentVolumeClaim:
+            claimName: report-data-pvc
+
 ---
 apiVersion: v1
 kind: Service
@@ -86,7 +99,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: api
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 6
   metrics:
     - type: Resource

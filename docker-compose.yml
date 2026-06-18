@@ -11,6 +11,9 @@ services:
       REDIS_HOST: redis
       API_PORT: "3001"
       QUEUE_DEPTH_POLLER: "true"
+      RUN_WORKERS_IN_API: "false"
+      MEDIA_OUTPUT_DIR: "/app/shared/media"
+      REPORT_OUTPUT_DIR: "/app/shared/reports"
     depends_on:
       redis:
         condition: service_healthy
@@ -25,6 +28,10 @@ services:
       start_period: 40s
     networks:
       - jobque_default
+    volumes:
+      - ./dashboard:/app/dashboard.ro
+      - media_data:/app/shared/media
+      - report_data:/app/shared/reports
 
   email-worker:
     build:
@@ -105,6 +112,7 @@ services:
       DB_HOST: db
       METRICS_PORT: "3001"
       JOB_DEMO_DELAY_MS: "0"
+      MEDIA_OUTPUT_DIR: "/app/shared/media"
     depends_on:
       redis:
         condition: service_healthy
@@ -127,6 +135,8 @@ services:
       start_period: 60s
     networks:
       - jobque_default
+    volumes:
+      - media_data:/app/shared/media
 
   ml-worker:
     build:
@@ -173,6 +183,7 @@ services:
       DB_HOST: db
       METRICS_PORT: "3001"
       JOB_DEMO_DELAY_MS: "0"
+      REPORT_OUTPUT_DIR: "/app/shared/reports"
     depends_on:
       redis:
         condition: service_healthy
@@ -195,6 +206,8 @@ services:
       start_period: 60s
     networks:
       - jobque_default
+    volumes:
+      - report_data:/app/shared/reports
 
   redis:
     image: redis:7-alpine
@@ -304,6 +317,8 @@ volumes:
   prometheus_data:
   grafana_data:
   alertmanager_data:
+  media_data:
+  report_data:
 
 networks:
   jobque_default:

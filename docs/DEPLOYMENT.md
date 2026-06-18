@@ -194,6 +194,7 @@ Create `staging` and `production` environments in repo settings for approval gat
 | `WORKER_TYPE` | Workers | `media`, `ml`, `email`, `etl`, or `report` |
 | `USE_S3` | No | Enable S3 storage for processed assets |
 | `SMTP_*` | Email worker | SMTP credentials for email jobs |
+| `HUNTER_API_KEY` | Email worker | Hunter.io API key for email verification (must be in `orchestrate-secrets`, not only local `.env`) |
 
 ---
 

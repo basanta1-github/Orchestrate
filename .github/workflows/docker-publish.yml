@@ -69,6 +69,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Verify ffmpeg in worker image
+        run: |
+          docker run --rm ${{ env.IMAGE_WORKER }}:${{ github.sha }} ffmpeg -version
+          docker run --rm ${{ env.IMAGE_WORKER }}:${{ github.sha }} ffprobe -version
+
       - name: Summary
         run: |
           echo "### Published images" >> "$GITHUB_STEP_SUMMARY"

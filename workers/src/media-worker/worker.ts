@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { BaseWorker } from "../base-worker/base.worker";
 // import { BaseProcessor } from "../base-worker/base.processor";
 import { MediaProcessor } from "./processor";
+import { configureFfmpeg } from "./ffmpeg.config";
 import {
   QueueMetricsCollector,
   QueueReconcileCollector,
@@ -27,6 +28,10 @@ export class MediaWorker extends BaseWorker implements OnModuleInit {
   //   return this.mediaProcessor;
   // }
   async onModuleInit() {
+    const { ffmpegPath, ffprobePath } = configureFfmpeg();
+    console.log(
+      `[MediaWorker] ffmpeg=${ffmpegPath} ffprobe=${ffprobePath}`,
+    );
     // now processor is fully injkected and can be used in startWorker
     await super.startWorker(this.mediaProcessor);
     // Workers start when module is initialized

@@ -66,6 +66,11 @@ export class EmailProcessor extends BaseProcessor {
     }
 
     let validEmailsSent = 0;
+    let lastFailureReason = "";
+
+    this.logger.log(
+      `Email job ${jobId}: hunter_skip=${process.env.HUNTER_SKIP_VERIFY === "true"}, smtp_host=${process.env.SMTP_HOST ? "set" : "missing"}`,
+    );
 
     // create DB row first
     for (const recipient of recipients) {
@@ -83,7 +88,8 @@ export class EmailProcessor extends BaseProcessor {
         const isDeliverable = await this.hunter.verify(recipient);
         if (!isDeliverable) {
           isValid = false;
-          faliureReason = "email not deliverable(hunter)";
+          faliureReason = "email not deliverable (hunter)";
+          lastFailureReason = faliureReason;
         }
       }
 
@@ -119,6 +125,7 @@ export class EmailProcessor extends BaseProcessor {
         continue; // skip sending
       }
       if (!isValid) {
+        lastFailureReason = faliureReason || lastFailureReason;
         this.logger.warn(
           `Skipping invalid recipient: ${recipient} (${faliureReason})`,
         );
@@ -139,9 +146,9 @@ export class EmailProcessor extends BaseProcessor {
           referenceId: "",
         });
         if (!response.success) {
-          throw new Error(
-            response.errorMessage || "Email rejected by provider",
-          );
+          const msg = response.errorMessage || "Email rejected by provider";
+          lastFailureReason = msg;
+          throw new Error(msg);
         }
         // update notification -> sent
 
@@ -156,18 +163,24 @@ export class EmailProcessor extends BaseProcessor {
 
         validEmailsSent++;
       } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        lastFailureReason = msg;
+        this.logger.error(`SMTP failed for ${recipient}: ${msg}`);
         await notificationRepo.update(
           { id: notification.id },
           {
             status: NotificationStatus.FAILED,
-            faliureReason:
-              error instanceof Error ? error.message : String(error),
+            faliureReason: msg,
           },
         );
       }
     }
     if (validEmailsSent === 0) {
-      throw new Error("no valid recipients. failed job");
+      throw new Error(
+        lastFailureReason
+          ? `email delivery failed: ${lastFailureReason}`
+          : "no valid recipients — all addresses failed validation or delivery",
+      );
     }
   }
 }

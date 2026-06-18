@@ -269,6 +269,62 @@ Copy `.env.example` → `.env`. Key settings:
 | `USE_S3`, `AWS_*`                 | optional       | optional         | Media worker uploads                           |
 | `SMTP_*`                          | optional       | optional         | Email worker                                   |
 
+# Environment Variables: Worker Mode and Output Paths
+
+RUN_WORKERS_IN_API
+
+- true: API process also starts worker consumers (media, report, etc.).
+  - Best for quick local development with a single process.
+  - Not recommended for production/Kubernetes (breaks API/worker separation).
+
+- false (recommended default): API only handles HTTP; workers run as separate processes/containers.
+  - Best for Docker Compose, Kubernetes, and production architecture.
+
+---
+
+MEDIA_OUTPUT_DIR
+Absolute/relative filesystem path where processed media files are stored.
+
+    - In Docker (shared volume):
+      MEDIA_OUTPUT_DIR=/app/shared/media
+    - Local host (optional):
+      MEDIA_OUTPUT_DIR=processed_media
+      or absolute Windows path if needed.
+
+Must match the API static serving path config for /processed_media/\*.
+
+---
+
+REPORT_OUTPUT_DIR
+Filesystem path where generated report files (PDF) are stored.
+
+    - In Docker (shared volume):
+      REPORT_OUTPUT_DIR=/app/shared/reports ✅
+    - Local host (optional):
+      REPORT_OUTPUT_DIR=processed_report
+
+Must match the API static serving path config for /processed_report/\*.
+
+Important: use a leading slash in Docker path.
+REPORT_OUTPUT_DIR=app/shared/reports is wrong; use /app/shared/reports.
+
+Recommended .env Profiles
+
+1. Local quick dev (single process)
+   RUN_WORKERS_IN_API=true
+   MEDIA_OUTPUT_DIR=processed_media
+   REPORT_OUTPUT_DIR=processed_report
+
+2. Docker Compose / production-like (separate workers)
+   RUN_WORKERS_IN_API=false
+   MEDIA_OUTPUT_DIR=/app/shared/media
+   REPORT_OUTPUT_DIR=/app/shared/reports
+
+One-line rule for contributors
+
+- If workers run inside API (RUN_WORKERS_IN_API=true), local relative folders are fine.
+- If workers run separately (RUN_WORKERS_IN_API=false), use shared absolute paths (or S3) so API and workers see the same files.
+
 See `.env.example` for the full list.
 ```
 
@@ -316,6 +372,82 @@ See [deploy/README.md](deploy/README.md) for:
 | Metrics    | Prometheus + Grafana                    |
 | Containers | Docker Compose (dev), Kubernetes (prod) |
 | CI/CD      | GitHub Actions                          |
+
+## Job output files & storage
+
+Completed media/report jobs store output paths in the job response:
+
+```json
+"result": {
+  "local": {
+    "url": "http://localhost:3001/processed_media/<file>",
+    "path": "/app/shared/media/<file>"
+  },
+  "s3": "https://<bucket>.s3.<region>.amazonaws.com/<file>"
+}
+
+```
+
+```bash
+|Field                    Use
+| ---------- | --------------------------------------------------------- |
+|local.url   |     Open in browser                                       |
+|local.path  |     Filesystem path inside the container (not a web   URL)|
+|s3          |     Object storage when USE_S3=true                       |
+```
+
+Local dev (npm, no Docker)
+Files are written under the API/worker process folder, typically:
+
+- api/processed_media/
+- api/processed_report/
+
+# Docker
+
+There is no /app folder on your host. Workers write to shared volumes:
+
+```bash
+|Type	       |  Container path	       | Compose volume
+| ---------- | ------------------------|-------------------------------- |
+|Media       |    /app/shared/media    |   media_data                    |
+|Reports     |  /app/shared/reports    |   report_data                   |
+```
+
+List files:
+
+```bash
+docker compose exec api ls -la /app/shared/media
+docker compose exec api ls -la /app/shared/reports
+```
+
+Copy a file to your machine:
+
+```bash
+docker compose cp api:/app/shared/reports/<file>.pdf ./downloads/
+```
+
+# Persistence
+
+| Action                                | Data kept?           |
+| ------------------------------------- | -------------------- |
+| docker compose stop / up / up --build | Yes                  |
+| docker compose down -v                | No — volumes deleted |
+| docker compose down                   | Yes (volumes remain) |
+
+For production, use S3 (USE_S3=true) so outputs survive container/volume lifecycle.
+
+---
+
+## Optional env table rows
+
+Add to your existing env table:
+| Variable | Docker | Local | Notes |
+|----------|--------|-------|-------|
+| `MEDIA_OUTPUT_DIR` | `/app/shared/media` | unset → `api/processed_media` | Must match API static path |
+| `REPORT_OUTPUT_DIR` | `/app/shared/reports` | unset → `api/processed_report` | Must match API static path |
+| `USE_S3` | `true` in prod | optional | Preferred for durable storage |
+
+---
 
 ## License
 

@@ -1,37 +1,69 @@
 apiVersion: v1
+
 kind: ConfigMap
+
 metadata:
   name: orchestrate-config
+
   namespace: orchestrate
+
 data:
   # ── API ──
+
   API_PORT: "3001"
+
+  RUN_WORKERS_IN_API: "false"
+
   NODE_ENV: "production"
-  CORS_ORIGIN: "https://orchestrate.local"
+
+  # Port-forward: http://localhost:3001 | Ingress: http://orchestrate.local
+
+  CORS_ORIGIN: "http://localhost:3001"
+
   QUEUE_DEPTH_POLLER: "true"
 
   # ── Database ──
-  # In-cluster Postgres Service name (NOT "db" like Docker Compose):
-  DB_HOST: postgres
-  DB_PORT: "5432"
-  DB_NAME: job_que
-  DB_USER: postgres
-  # For external RDS/Cloud SQL, override DB_HOST via patch or replace postgres.yaml
 
+  DB_HOST: postgres
+
+  DB_PORT: "5432"
+
+  DB_NAME: job_que
+
+  DB_USER: postgres
 
   DB_SYNCHRONIZE: "true"
+
   JOB_DEMO_DELAY_MS: "0"
+
   TENANT_JOBS_PER_MINUTE: "0"
 
+  HUNTER_SKIP_VERIFY: "true"
 
   # ── Redis / BullMQ ──
+
   REDIS_HOST: redis
+
   REDIS_PORT: "6379"
-  # For external ElastiCache, override REDIS_HOST and remove redis.yaml from kustomization
 
   # ── Workers ──
-  METRICS_PORT: "3001"
-  JOB_DEMO_DELAY_MS: "0"
 
-  # ── Optional S3 ──
-  USE_S3: "false"
+  METRICS_PORT: "3001"
+
+  # Path A — durable object storage (requires AWS keys in orchestrate-secrets)
+
+  USE_S3: "true"
+
+  # Path B — shared local paths (API static + worker writes; match volume mounts)
+
+  MEDIA_OUTPUT_DIR: "/app/shared/media"
+
+  REPORT_OUTPUT_DIR: "/app/shared/reports"
+
+  # Embedded in job result.local.url (change for ingress/prod domain)
+
+  PUBLIC_API_URL: "http://localhost:3001"
+
+  CLEAN_TEMP_FILES: "true"
+
+  GRAFANA_ADMIN_USER: "admin"

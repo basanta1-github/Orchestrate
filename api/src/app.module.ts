@@ -24,6 +24,10 @@ import { DataSource } from 'typeorm';
 import { MetricsModule, HttpMetricsInterceptor } from '@jobque/shared';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
+/** Docker Compose / K8s: workers run in separate containers — API must not boot BullMQ consumers. */
+const workerImports =
+  process.env.RUN_WORKERS_IN_API === 'true' ? [WorkerModule] : [];
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -47,7 +51,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     JobsModule,
     AuthModule,
     MetricsModule,
-    WorkerModule,
+    ...workerImports,
   ],
   providers: [
     {

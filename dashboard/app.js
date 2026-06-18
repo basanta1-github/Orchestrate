@@ -9,8 +9,7 @@ const JOB_TEMPLATES = {
     filters: ["grayscale"],
   },
   video_transcode: {
-    fileUrl:
-      "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    fileUrl: "https://filesamples.com/samples/video/mp4/sample_640x360.mp4",
     format: "mp4",
   },
   audio_transcode: {
@@ -28,7 +27,7 @@ const JOB_TEMPLATES = {
       "Orchestrate is a distributed job queue system built with NestJS, BullMQ, Redis, and PostgreSQL.",
   },
   "email-jobs": {
-    recipients: ["demo@example.com"],
+    recipients: ["pokhrelb246@gmail.com"],
     subject: "Orchestrate Demo",
     content: "Hello from the Orchestrate email worker!",
   },
@@ -62,8 +61,13 @@ function escapeHtml(str) {
 
 function lastErrorFromJob(job) {
   const attempts = job?.attempts || [];
-  for (let i = attempts.length - 1; i >= 0; i--) {
-    if (attempts[i]?.errorMessage) return attempts[i].errorMessage;
+  if (job?.status === "FAILED") {
+    for (let i = attempts.length - 1; i >= 0; i--) {
+      if (attempts[i]?.errorMessage) return attempts[i].errorMessage;
+    }
+  } else if (attempts.length > 0) {
+    const lastAttempt = attempts[attempts.length - 1];
+    if (lastAttempt?.errorMessage) return lastAttempt.errorMessage;
   }
   const logs = job?.logs || [];
   for (let i = logs.length - 1; i >= 0; i--) {

@@ -1,0 +1,46 @@
+# Replace PVC volumes with hostPath (single-node local clusters).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: orchestrate
+spec:
+  template:
+    spec:
+      volumes:
+        - name: media-data
+          hostPath:
+            path: /var/lib/orchestrate/media
+            type: DirectoryOrCreate
+        - name: report-data
+          hostPath:
+            path: /var/lib/orchestrate/reports
+            type: DirectoryOrCreate
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-worker
+  namespace: orchestrate
+spec:
+  template:
+    spec:
+      volumes:
+        - name: media-data
+          hostPath:
+            path: /var/lib/orchestrate/media
+            type: DirectoryOrCreate
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report-worker
+  namespace: orchestrate
+spec:
+  template:
+    spec:
+      volumes:
+        - name: report-data
+          hostPath:
+            path: /var/lib/orchestrate/reports
+            type: DirectoryOrCreate

@@ -8,24 +8,35 @@ export interface SendEmailResponse {
 }
 
 export class STMPProvider implements EmailProvider {
-  private transporter;
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+  private transporter: nodemailer.Transporter | null = null;
+
+  private getTransporter(): nodemailer.Transporter {
+    const host = process.env.SMTP_HOST?.trim();
+    const user = process.env.SMTP_USER?.trim();
+    const pass = process.env.SMTP_PASS?.trim();
+
+    if (!host || !user || !pass) {
+      throw new Error(
+        `SMTP not configured (host=${host ? "set" : "missing"}, user=${user ? "set" : "missing"}, pass=${pass ? "set" : "missing"})`,
+      );
+    }
+
+    if (!this.transporter) {
+      this.transporter = nodemailer.createTransport({
+        host,
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: false,
+        requireTLS: true,
+        auth: { user, pass },
+      });
+    }
+
+    return this.transporter;
   }
 
   async send(payload: EmailPayload) {
     try {
-      // check smtp server connetction
-      // await this.transporter.verify();
-      const info = await this.transporter.sendMail({
+      const info = await this.getTransporter().sendMail({
         from: process.env.SMTP_USER,
         to: payload.recipient,
         subject: payload.subject,

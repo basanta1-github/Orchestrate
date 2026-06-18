@@ -7,13 +7,14 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - postgres.yaml
+  - media-report-storage.yaml
   - redis.yaml
   - api.yaml
   - workers.yaml
   - worker-services.yaml
   - monitoring.yaml
   - ingress.yaml
-    - ../monitoring/grafana/dashboards/configmap.yaml
+  - grafana-dashboard-configmap.yaml
   # Optional — requires KEDA installed in cluster:
   # - keda-scaledobject.yaml
 
@@ -27,3 +28,7 @@ images:
     newTag: latest
 # secrets.yaml is applied separately (gitignored):
 #   kubectl apply -f k8s/secrets.yaml
+#
+# Storage overlays (Path B) — pick one:
+#   Docker Desktop / Minikube:  kubectl apply -k k8s/overlays/local-storage
+#   Cloud with RWX PVC:         kubectl apply -k k8s/overlays/rwx-storage

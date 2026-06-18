@@ -34,8 +34,8 @@ export abstract class BaseProcessor {
     // // band promotion, autoscaling, tenant-cap staging, etc.
     // // Set JOB_DEMO_DELAY_MS in the worker's .env (e.g. 10000 for 10s).
     // // Leave it unset / 0 in production.
-    // const demoDelayMs = parseInt(process.env.JOB_DEMO_DELAY_MS ?? "0", 10);
-    const demoDelayMs = 10000;
+    const demoDelayMs = parseInt(process.env.JOB_DEMO_DELAY_MS ?? "0", 10);
+    // const demoDelayMs = 10000;
     if (demoDelayMs > 0) {
       this.logger.warn(
         `DEMO delay: holding job ${job.data.jobId} for ${demoDelayMs}ms`,

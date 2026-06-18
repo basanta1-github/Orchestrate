@@ -1,11 +1,33 @@
 # DigitalOcean App Platform — Orchestrate API + all workers
 # Docs: https://docs.digitalocean.com/products/app-platform/reference/app-spec/
+#
+# Storage note: App Platform has no shared disk between services.
+# Use Path A (S3) for media/report outputs — set USE_S3=true and AWS secrets below.
+# Local /processed_media URLs will NOT work across separate worker components.
 name: orchestrate
 region: nyc
+
+x-s3-env: &s3_env
+  - key: USE_S3
+    value: "true"
+  - key: AWS_ACCESS_KEY_ID
+    scope: RUN_TIME
+    type: SECRET
+  - key: AWS_SECRET_ACCESS_KEY
+    scope: RUN_TIME
+    type: SECRET
+  - key: AWS_REGION
+    scope: RUN_TIME
+    type: SECRET
+  - key: S3_BUCKET
+    scope: RUN_TIME
+    type: SECRET
 
 x-worker-env: &worker_env
   - key: NODE_ENV
     value: production
+  - key: RUN_WORKERS_IN_API
+    value: "true"
   - key: DB_HOST
     value: ${db.HOSTNAME}
   - key: DB_PORT
@@ -26,6 +48,11 @@ x-worker-env: &worker_env
     value: "0"
   - key: DB_SYNCHRONIZE
     value: "true"
+  - key: CLEAN_TEMP_FILES
+    value: "true"
+  - key: HUNTER_SKIP_VERIFY
+    value: "true"
+  - <<: *s3_env
 
 services:
   - name: api
@@ -46,6 +73,8 @@ services:
         type: SECRET
       - key: NODE_ENV
         value: production
+      - key: RUN_WORKERS_IN_API
+        value: "true"
       - key: DB_HOST
         value: ${db.HOSTNAME}
       - key: DB_PORT
@@ -66,6 +95,9 @@ services:
         value: "true"
       - key: CORS_ORIGIN
         value: ${api.PUBLIC_URL}
+      - key: PUBLIC_API_URL
+        value: ${api.PUBLIC_URL}
+      - <<: *s3_env
 
   - name: media-worker
     github:
@@ -79,6 +111,10 @@ services:
       - <<: *worker_env
       - key: WORKER_TYPE
         value: media
+      - key: FFMPEG_PATH
+        value: /usr/bin/ffmpeg
+      - key: FFPROBE_PATH
+        value: /usr/bin/ffprobe
 
   - name: ml-worker
     github:

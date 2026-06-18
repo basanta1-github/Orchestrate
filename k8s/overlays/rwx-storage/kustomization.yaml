@@ -1,0 +1,8 @@
+# Cloud / RWX-capable clusters: PVC-backed shared media + report storage.
+# Deploy: kubectl apply -f k8s/namespace.yaml && kubectl apply -f k8s/secrets.yaml && kubectl apply -k k8s/overlays/rwx-storage
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../
+  - ../../media-report-storage.yaml

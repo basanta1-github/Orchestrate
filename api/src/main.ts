@@ -38,6 +38,18 @@ async function bootstrap() {
       prefix: '/dashboard/',
       index: ['index.html'],
     });
+    const reportsPath =
+      process.env.REPORT_OUTPUT_DIR || join(process.cwd(), 'processed_report');
+
+    app.useStaticAssets(reportsPath, {
+      prefix: '/processed_report/',
+    });
+    const mediaPath =
+      process.env.MEDIA_OUTPUT_DIR || join(process.cwd(), 'processed_media');
+
+    app.useStaticAssets(mediaPath, {
+      prefix: '/processed_media/',
+    });
 
     const port = process.env.API_PORT || 3001;
     await app.listen(port);
